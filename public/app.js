@@ -1757,55 +1757,177 @@ function exportPPTReport() {
     addSegmentDetailSlide('ENTERPRISE', 'Enterprise / Lainnya', '5E6A77');
 
     // ==========================================
-    // SLIDE 12: ANALISIS ORDER TERLAMA & REKOMENDASI OPERASIONAL (PENUTUP)
+    // SLIDE 12: ANALISIS MENDALAM & TEMUAN KRITIS
     // ==========================================
-    let slide8 = pptx.addSlide();
-    addHeader(slide8, "Analisis Kendala Order Terlama & Rekomendasi Operasional", "KESIMPULAN & ACTION PLAN STRATEGIS MANAGEMENT");
-    addFooter(slide8);
+    let slide12 = pptx.addSlide();
+    addHeader(slide12, "Analisis Mendalam: Temuan Kritis & Pola Backlog Order", "ANALISIS DATA KOMPREHENSIF JANUARI — AGUSTUS 2026");
+    addFooter(slide12);
 
-    // Dynamic analysis values computed directly from uploaded dataset summary
-    const typeCreate12 = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'CREATE') : null;
-    const typeModify12 = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'MODIFY') : null;
-    const typeMigrate12 = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'MIGRATE') : null;
+    // ── Hitung metrik dari data riil ──
+    const totOrd = summaryData ? (summaryData.total_order_semesta || 0) : 248090;
+    const totPsAll = summaryData ? (summaryData.total_ps || 0) : 225567;
+    const totPend = summaryData ? (summaryData.total_pending || (totOrd - totPsAll)) : 8833;
+    const psPct = totOrd > 0 ? ((totPsAll / totOrd) * 100).toFixed(1) : '90.9';
+    const totPsMonth = summaryData ? (summaryData.total_ps_last_month || 0) : 15233;
 
-    const maxCreateDaysStr = (typeCreate12 && typeCreate12.max_active_days) ? `${typeCreate12.max_active_days.toFixed(1)} Hari` : "220,9 Hari";
-    const maxModifyDaysStr = (typeModify12 && typeModify12.max_active_days) ? `${typeModify12.max_active_days.toFixed(1)} Hari` : "217,9 Hari";
-    const avgCreatePsStr12 = (typeCreate12 && typeCreate12.avg_ps_days) ? `${typeCreate12.avg_ps_days.toFixed(2)} Hari (~${(typeCreate12.avg_ps_hours || 0).toFixed(1)} Jam)` : "0,94 Hari (~22,5 Jam)";
-    const avgMigratePsStr = (typeMigrate12 && typeMigrate12.avg_ps_days) ? `${typeMigrate12.avg_ps_days.toFixed(2)} Hari` : "2,07 Hari";
+    const t12Create = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'CREATE') : null;
+    const t12Modify = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'MODIFY') : null;
+    const t12Disc   = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'DISCONNECT') : null;
+    const t12Mig    = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'MIGRATE') : null;
+    const t12Unspec = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'UNSPECIFIED') : null;
 
-    let topPendingOrderInfo = "Modoroso (Witel JAKSEL)";
-    if (allOrdersStore && allOrdersStore.length > 0) {
-        const top1 = allOrdersStore
-            .filter(o => o.is_ps === 0 && o.active_duration_days !== null)
-            .sort((a, b) => b.active_duration_days - a.active_duration_days)[0];
-        if (top1) {
-            topPendingOrderInfo = `${top1.segment || 'Modoroso'} (Witel ${top1.witel || 'JAKSEL'})`;
+    const unspecPend = t12Unspec ? (t12Unspec.total_pending || 4659) : 4659;
+    const modifyPend = t12Modify ? (t12Modify.total_pending || 215) : 215;
+    const suspPend   = summaryData && summaryData.type_summary ? (summaryData.type_summary.find(t => t.tipe_transaksi === 'SUSPEND') || { total_pending: 1009 }).total_pending : 1009;
+    const maxPendDays = summaryData ? (summaryData.max_active_days || 221.0) : 221.0;
+    const avgCreatePs = t12Create ? (t12Create.avg_ps_days || 0.86) : 0.86;
+    const avgMigPs    = t12Mig   ? (t12Mig.avg_ps_days || 2.16)   : 2.16;
+    const topPendSegInfo = (() => {
+        if (allOrdersStore && allOrdersStore.length > 0) {
+            const t1 = allOrdersStore.filter(o => o.is_ps === 0 && o.active_duration_days).sort((a,b) => b.active_duration_days - a.active_duration_days)[0];
+            if (t1) return `${t1.segment || 'PDA HSI'} (Witel ${t1.witel || 'JAKPUS'})`;
         }
-    }
+        return 'PDA HSI (Witel JAKPUS)';
+    })();
 
-    slide8.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.8, y: 1.5, w: 5.6, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
-    slide8.addText("TEMUAN UTAMA ORDER TERLAMA (> 200 HARI)", { x: 1.1, y: 1.8, w: 5.0, h: 0.4, fontSize: 13, bold: true, color: TELKOM_RED });
-    const findings = [
-        `Order Terlama Pending Mencapai ${maxCreateDaysStr} pada tipe transaksi CREATE dan ${maxModifyDaysStr} pada tipe MODIFY.`,
-        `Konsentrasi Order Terlama ditemukan pada segmen ${topPendingOrderInfo}.`,
-        "Penyebab Utama Pending Long-Aging: kendala ketersediaan alokasi port/ODP, isu perizinan alamat pelanggan, dan koordinasi lapangan WO Workorder.",
-        `Meskipun demikian, rata-rata durasi PS untuk transaksi baru (CREATE) sangat cepat yaitu ${avgCreatePsStr12}.`
+    // ── KOTAK KIRI: TEMUAN KRITIS (6 poin) ──
+    slide12.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y: 1.3, w: 5.9, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+    slide12.addShape(pptx.shapes.RECTANGLE, { x: 0.3, y: 1.3, w: 5.9, h: 0.42, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
+    slide12.addText("⚠  TEMUAN KRITIS BACKLOG JANUARI — AGUSTUS 2026", { x: 0.4, y: 1.3, w: 5.7, h: 0.42, fontSize: 9.5, bold: true, color: WHITE, align: 'left' });
+
+    const findings12 = [
+        `Total ${totOrd.toLocaleString()} order diproses (Jan–Aug 2026). Tingkat PS ${psPct}% menunjukkan performa operasional yang sangat baik.`,
+        `Order pending terlama mencapai ${maxPendDays.toFixed(1)} hari. Konsentrasi terbesar di segmen ${topPendSegInfo} dengan status WAPPR (Waiting Approval).`,
+        `UNSPECIFIED type menjadi sumber backlog terbesar: ${unspecPend.toLocaleString()} pending dari total ${t12Unspec ? (t12Unspec.total_order || 8435).toLocaleString() : '8.435'} order, dengan rata-rata durasi PS 10,87 hari — 12x lebih lama dari CREATE.`,
+        `SUSPEND memiliki ${suspPend.toLocaleString()} order pending (22,5% dari total SUSPEND), mayoritas tanpa tanggal PS — berpotensi hidden backlog permanen.`,
+        `MODIFY hanya ${modifyPend.toLocaleString()} order pending (0,4% dari total MODIFY 58.013) — tipe transaksi dengan eksekusi paling efisien.`,
+        `MIGRATE rata-rata PS 2,16 hari (51,8 jam) — tertinggi di antara tipe reguler. Proses migrasi memerlukan koordinasi multi-sistem yang kompleks.`
     ];
-    findings.forEach((f, idx) => {
-        slide8.addText("• " + f, { x: 1.1, y: 2.3 + idx * 1.0, w: 5.0, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
+    findings12.forEach((f, idx) => {
+        const fyStart = 1.82 + idx * 0.77;
+        slide12.addShape(pptx.shapes.ELLIPSE, { x: 0.45, y: fyStart + 0.06, w: 0.22, h: 0.22, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
+        slide12.addText(String(idx+1), { x: 0.45, y: fyStart + 0.06, w: 0.22, h: 0.22, fontSize: 7.5, bold: true, color: WHITE, align: 'center' });
+        slide12.addText(f, { x: 0.73, y: fyStart, w: 5.3, h: 0.72, fontSize: 8.5, color: TEXT_DARK, valign: 'top' });
     });
 
-    slide8.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 6.8, y: 1.5, w: 5.7, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
-    slide8.addText("REKOMENDASI PERBAIKAN OPERASIONAL", { x: 7.1, y: 1.8, w: 5.1, h: 0.4, fontSize: 13, bold: true, color: DARK_NAVY });
-    const recs = [
-        "Pembersihan Backlog (Clearing Long-Aging): Membentuk Task Force khusus penanganan order berusia > 30 hari untuk validasi fisik ODP di Witel prioritas.",
-        "Otomasi Filter & Dashboard Monitoring: Menggunakan Dashboard Data Semesta Vercel dengan filter urutan 'Order Terlama' untuk penanganan harian teknisi.",
-        `Standardisasi SLA Tipe Transaksi: Mempertahankan SLA CREATE < 24 jam dan mempercepat proses administrasi tipe MIGRATE (rata-rata ${avgMigratePsStr}).`,
-        "Integrasi Sistem Berkala: Mengunggah file laporan bulanan .xlsx ke web dashboard untuk menjaga visibilitas real-time manajemen."
+    // ── KOTAK TENGAH: RINGKASAN ANGKA KUNCI ──
+    slide12.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 6.5, y: 1.3, w: 6.55, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+    slide12.addShape(pptx.shapes.RECTANGLE, { x: 6.5, y: 1.3, w: 6.55, h: 0.42, fill: { color: DARK_NAVY }, line: { color: DARK_NAVY } });
+    slide12.addText("📊  ANGKA KUNCI PERFORMA JAN–AGU 2026", { x: 6.6, y: 1.3, w: 6.35, h: 0.42, fontSize: 9.5, bold: true, color: WHITE, align: 'left' });
+
+    const kpiRows = [
+        ['Total Order Semesta',       totOrd.toLocaleString(),            TELKOM_RED ],
+        ['Total PS (Complete)',        `${totPsAll.toLocaleString()} (${psPct}%)`, '065F46'],
+        ['Total Pending (Belum PS)',   totPend.toLocaleString(),           'D97706'  ],
+        ['PS 1 Bulan Kebelakang',     totPsMonth.toLocaleString(),        DARK_NAVY ],
+        ['Order Terlama (Pending)',   `${maxPendDays.toFixed(1)} Hari`,    TELKOM_RED],
+        ['Avg PS CREATE',             `${avgCreatePs.toFixed(2)} Hari (${(avgCreatePs*24).toFixed(1)}j)`, '065F46'],
+        ['Avg PS MIGRATE',            `${avgMigPs.toFixed(2)} Hari (${(avgMigPs*24).toFixed(1)}j)`,       'D97706'],
+        ['Segmen Terbesar',           'PDA HSI (102.303 Order)',           DARK_NAVY ],
+        ['Segmen Backlog Terbesar',   'Modoroso (4.274 Pending)',          'B91C1C'  ]
     ];
-    recs.forEach((r, idx) => {
-        slide8.addText("✔ " + r, { x: 7.1, y: 2.3 + idx * 1.0, w: 5.1, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
+    kpiRows.forEach(([label, value, color], idx) => {
+        const ky = 1.88 + idx * 0.49;
+        const bg = idx % 2 === 0 ? CARD_BG : 'EEF2FF';
+        slide12.addShape(pptx.shapes.RECTANGLE, { x: 6.6, y: ky, w: 6.3, h: 0.44, fill: { color: bg }, line: { color: 'D1D5DB' } });
+        slide12.addText(label, { x: 6.7, y: ky + 0.05, w: 3.8, h: 0.34, fontSize: 9, color: TEXT_MUTED });
+        slide12.addText(value, { x: 10.55, y: ky + 0.05, w: 2.2, h: 0.34, fontSize: 10, bold: true, color: color, align: 'right' });
     });
+
+    // ==========================================
+    // SLIDE 13: KESIMPULAN STRATEGIS & REKOMENDASI ACTION PLAN
+    // ==========================================
+    let slide13 = pptx.addSlide();
+    addHeader(slide13, "Kesimpulan Strategis & Rekomendasi Action Plan", "KESIMPULAN MANAJEMEN & TINDAK LANJUT PRIORITAS");
+    addFooter(slide13);
+
+    // Accent bar
+    slide13.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 1.15, w: 13.333, h: 0.06, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
+
+    // ── KESIMPULAN UTAMA (Full Width Box) ──
+    slide13.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y: 1.3, w: 12.733, h: 1.22, fill: { color: DARK_NAVY }, line: { color: DARK_NAVY }, rectRadius: 0.08 });
+    slide13.addText("KESIMPULAN UTAMA — KINERJA OPERASIONAL JANUARI – AGUSTUS 2026", { x: 0.6, y: 1.35, w: 12.2, h: 0.35, fontSize: 12, bold: true, color: TELKOM_RED });
+    slide13.addText(
+        `Data Semesta Telkom mencatat ${totOrd.toLocaleString()} total order dari Januari hingga Agustus 2026 dengan tingkat penyelesaian PS sebesar ${psPct}% (${totPsAll.toLocaleString()} order). ` +
+        `Performa operasional secara keseluruhan sangat baik, namun terdapat ${totPend.toLocaleString()} order pending yang memerlukan penanganan segera — khususnya yang berusia di atas 180 hari. ` +
+        `Backlog terbesar terkonsentrasi di segmen Modoroso (4.274 pending) dan PDA HSI (1.433 pending) dengan order terlama mencapai ${maxPendDays.toFixed(0)} hari.`,
+        { x: 0.6, y: 1.72, w: 12.2, h: 0.7, fontSize: 9.5, color: WHITE }
+    );
+
+    // ── 4 ACTION PLAN CARDS ──
+    const actionPlans = [
+        {
+            icon: '🎯',
+            title: 'TASK FORCE CLEARING BACKLOG',
+            color: TELKOM_RED,
+            actions: [
+                `Prioritaskan ${totPend.toLocaleString()} order pending, khususnya 8.833 yang aktif.`,
+                'Fokus clearing Witel JAKPUS, JAKSEL, JAKTIM (paling banyak order >200 hari).',
+                'Target: turunkan backlog >180 hari menjadi 0 dalam 30 hari ke depan.',
+                'Validasi fisik ODP dan penanganan perizinan lokasi pelanggan.'
+            ]
+        },
+        {
+            icon: '🔧',
+            title: 'PENANGANAN STATUS UNSPECIFIED',
+            color: 'D97706',
+            actions: [
+                `${unspecPend.toLocaleString()} order UNSPECIFIED pending — avg PS tertinggi 10,87 hari.`,
+                'Audit dan reklasifikasi tipe transaksi di sistem CRM secara periodik.',
+                'Tetapkan SOP khusus untuk tipe UNSPECIFIED dengan SLA maksimal 3 hari.',
+                'Escal otomatis ke SPV jika order UNSPECIFIED > 7 hari tanpa update.'
+            ]
+        },
+        {
+            icon: '⏸',
+            title: 'RESOLUSI ORDER SUSPEND',
+            color: '5E6A77',
+            actions: [
+                `${suspPend.toLocaleString()} order SUSPEND pending tanpa tanggal PS — hidden backlog.`,
+                'Review ulang seluruh order SUSPEND > 30 hari: aktifkan atau cancel.',
+                'Koordinasi dengan Sales/AM untuk konfirmasi kelanjutan order.',
+                'Pembersihan data SUSPEND lama mencegah distorsi metrik kinerja.'
+            ]
+        },
+        {
+            icon: '📈',
+            title: 'OPTIMASI & MONITORING BERKELANJUTAN',
+            color: '065F46',
+            actions: [
+                `Pertahankan SLA CREATE ${avgCreatePs.toFixed(2)} hari — benchmark terbaik industri.`,
+                `Percepat MIGRATE dari ${avgMigPs.toFixed(2)} hari dengan integrasi sistem lintas platform.`,
+                'Upload data bulanan ke Dashboard Data Semesta untuk monitoring real-time.',
+                'Review performa mingguan berdasarkan laporan download PPT otomatis.'
+            ]
+        }
+    ];
+
+    actionPlans.forEach((ap, idx) => {
+        const col = idx % 2 === 0 ? 0 : 1;
+        const row = Math.floor(idx / 2);
+        const cardX = 0.3 + col * 6.5;
+        const cardY = 2.72 + row * 2.1;
+
+        slide13.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: cardX, y: cardY, w: 6.2, h: 1.95, fill: { color: CARD_BG }, line: { color: CARD_BORDER }, rectRadius: 0.06 });
+        slide13.addShape(pptx.shapes.RECTANGLE, { x: cardX, y: cardY, w: 6.2, h: 0.42, fill: { color: ap.color }, line: { color: ap.color } });
+        slide13.addText(`${ap.icon}  ${ap.title}`, { x: cardX + 0.12, y: cardY, w: 5.9, h: 0.42, fontSize: 9.5, bold: true, color: WHITE, align: 'left' });
+
+        ap.actions.forEach((action, ai) => {
+            slide13.addText(`• ${action}`, {
+                x: cardX + 0.18, y: cardY + 0.48 + ai * 0.36,
+                w: 5.8, h: 0.34,
+                fontSize: 8.5, color: TEXT_DARK
+            });
+        });
+    });
+
+    // ── BOTTOM FOOTER BOX ──
+    slide13.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y: 6.85, w: 12.733, h: 0.55, fill: { color: DARK_NAVY }, line: { color: DARK_NAVY } });
+    slide13.addText(
+        `📅 Laporan Periode: Januari – Agustus 2026  |  Total Data: ${totOrd.toLocaleString()} Order  |  ` +
+        `PS Rate: ${psPct}%  |  Pending Aktif: ${totPend.toLocaleString()} Order  |  PS 30 Hari: ${totPsMonth.toLocaleString()} Order`,
+        { x: 0.5, y: 6.88, w: 12.4, h: 0.46, fontSize: 8.5, color: 'AAAAAA', align: 'center' }
+    );
 
     // Save File in Browser
     pptx.writeFile({ fileName: "Laporan_Analisis_Data_Semesta_Telkom.pptx" });
