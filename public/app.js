@@ -44,9 +44,9 @@ function setupEventListeners() {
     });
 
     fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            handleClientFileUpload(file);
+        const files = Array.from(e.target.files);
+        if (files && files.length > 0) {
+            handleClientFileUpload(files);
         }
     });
 
@@ -117,7 +117,7 @@ function closeDetailModal() {
     document.getElementById('detail-modal').classList.add('hidden');
 }
 
-// High-Capacity IndexedDB Persistent Storage (Stores complete 88,000+ orders across page refreshes)
+// High-Capacity IndexedDB Persistent Storage (Stores complete dataset across page refreshes)
 const DB_NAME = 'SemestaDataDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'semesta_store';
@@ -142,7 +142,7 @@ async function saveSemestaToDB(summary, orders) {
         const tx = db.transaction(STORE_NAME, 'readwrite');
         const store = tx.objectStore(STORE_NAME);
 
-        // ERASE / CLEAR previous dataset completely when uploading a new file!
+        // ERASE / CLEAR previous dataset completely when uploading a new file/batch!
         await new Promise((res, rej) => {
             const clearReq = store.clear();
             clearReq.onsuccess = res;
@@ -313,26 +313,23 @@ async function initDataState() {
 // Client-Side Multi-Strategy Excel Reader (Fixes "Bad uncompressed size" on ZIP64 / Custom CRM Exports)
 function readExcelWorkbook(file, statusEl, progressBar) {
     return new Promise((resolve, reject) => {
-        statusEl.textContent = 'Menggunakan engine pembaca data Excel...';
+        statusEl.textContent = `Menggunakan engine pembaca data Excel (${file.name})...`;
         progressBar.style.width = '40%';
 
         const r1 = new FileReader();
         r1.onload = (e) => {
             try {
-                const binStr = e.target.result;
-                const workbook = XLSX.read(binStr, { type: 'binary', cellDates: false, raw: true });
-                return resolve(workbook);
+                const data = e.target.result;
+                const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
+                resolve(workbook);
             } catch (err1) {
-                console.warn('Strategy 1 (binary) failed, trying Strategy 2 (array buffer)...', err1);
-                
                 const r2 = new FileReader();
                 r2.onload = (e2) => {
                     try {
-                        const data = new Uint8Array(e2.target.result);
-                        const workbook = XLSX.read(data, { type: 'array', cellDates: false, raw: true });
-                        return resolve(workbook);
+                        const data2 = new Uint8Array(e2.target.result);
+                        const workbook2 = XLSX.read(data2, { type: 'array', cellDates: true });
+                        resolve(workbook2);
                     } catch (err2) {
-                        console.error('All SheetJS parsing strategies failed:', err2);
                         reject(err2);
                     }
                 };
@@ -345,8 +342,11 @@ function readExcelWorkbook(file, statusEl, progressBar) {
     });
 }
 
-// Client-Side Excel File Upload Handler
-async function handleClientFileUpload(file) {
+// Client-Side Batch Multi-File Excel Upload Handler (Processes multiple 2-3 month files seamlessly)
+async function handleClientFileUpload(fileInputParam) {
+    const files = Array.isArray(fileInputParam) ? fileInputParam : [fileInputParam];
+    if (!files || files.length === 0) return;
+
     const modal = document.getElementById('upload-modal');
     const titleEl = document.getElementById('upload-modal-title');
     const descEl = document.getElementById('upload-modal-desc');
@@ -354,47 +354,51 @@ async function handleClientFileUpload(file) {
     const progressBar = document.getElementById('upload-progress-bar');
 
     modal.classList.remove('hidden');
-    titleEl.textContent = 'Membaca File Excel...';
-    descEl.textContent = `Memuat data dari ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
-    statusEl.textContent = 'Membaca struktur zip & tabel...';
-    progressBar.style.width = '20%';
+    titleEl.textContent = files.length > 1 ? `Memproses Batch ${files.length} File Excel...` : 'Membaca File Excel...';
+    descEl.textContent = files.length > 1 
+        ? `Menggabungkan data dari ${files.length} file (.xlsx / .csv)`
+        : `Memuat data dari ${files[0].name} (${(files[0].size / (1024 * 1024)).toFixed(1)} MB)`;
+    progressBar.style.width = '10%';
 
     try {
-        const workbook = await readExcelWorkbook(file, statusEl, progressBar);
+        let combinedRawRows = [];
+        for (let i = 0; i < files.length; i++) {
+            const f = files[i];
+            const pct = Math.round(10 + ((i + 1) / files.length) * 60);
+            progressBar.style.width = `${pct}%`;
+            titleEl.textContent = files.length > 1 ? `Membaca File ${i + 1} dari ${files.length}...` : 'Membaca File Excel...';
+            statusEl.textContent = `Mengurai ${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)...`;
 
-        progressBar.style.width = '70%';
-        statusEl.textContent = 'Mengekstrak baris & menghitung durasi PS...';
+            const wb = await readExcelWorkbook(f, statusEl, progressBar);
+            const firstSheetName = wb.SheetNames[0];
+            const worksheet = wb.Sheets[firstSheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+            combinedRawRows = combinedRawRows.concat(rows);
+        }
 
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        progressBar.style.width = '75%';
+        statusEl.textContent = `Total ${combinedRawRows.length.toLocaleString()} baris dari ${files.length} file. Menghitung durasi & SLA...`;
 
-        progressBar.style.width = '85%';
-        statusEl.textContent = `Berhasil membaca ${rawRows.length.toLocaleString()} baris. Menyusun database...`;
-
-        const processed = processRawExcelRows(rawRows);
+        const processed = processRawExcelRows(combinedRawRows);
         summaryData = processed.summary;
         allOrdersStore = processed.orders;
 
-        // 1. Save to High-Capacity IndexedDB (ERASES old dataset locally)
-        statusEl.textContent = 'Menyimpan data baru ke database browser...';
+        // 1. Save to High-Capacity IndexedDB
+        statusEl.textContent = 'Menyimpan data ke database browser...';
         await saveSemestaToDB(summaryData, allOrdersStore);
 
-        // 2. Upload to Firebase Cloud (ERASES old dataset in Firebase Cloud & replaces with new dataset)
-        statusEl.textContent = 'Mengunggah & menyinkronkan data baru ke Firebase Cloud...';
+        // 2. Upload to Firebase Cloud
+        statusEl.textContent = 'Mengunggah & menyinkronkan data ke Firebase Cloud...';
         await saveToFirebaseCloud(summaryData, allOrdersStore);
 
-        // Save to localStorage for quick summary fallback
         try {
             localStorage.setItem('semesta_summary', JSON.stringify(summaryData));
             localStorage.setItem('semesta_orders_sample', JSON.stringify(allOrdersStore.slice(0, 2000)));
-        } catch (e) {
-            console.log('LocalStorage quota exceeded, data safely stored in Firebase & IndexedDB.');
-        }
+        } catch (e) {}
 
         progressBar.style.width = '100%';
-        titleEl.textContent = 'Upload & Analisis Berhasil! 🎉';
-        descEl.textContent = `Berhasil memproses ${rawRows.length.toLocaleString()} order dari ${file.name}`;
+        titleEl.textContent = 'Batch Upload & Analisis Berhasil! 🎉';
+        descEl.textContent = `Berhasil memproses ${combinedRawRows.length.toLocaleString()} order dari ${files.length} file Excel.`;
         statusEl.textContent = 'Memuat ulang antarmuka dashboard...';
 
         renderSummaryUI(summaryData);
@@ -404,10 +408,10 @@ async function handleClientFileUpload(file) {
         setTimeout(() => {
             modal.classList.add('hidden');
             document.getElementById('file-input-xlsx').value = '';
-        }, 1200);
+        }, 1500);
 
     } catch (err) {
-        console.error('Client upload error:', err);
+        console.error('Batch upload error:', err);
         titleEl.textContent = 'Upload Gagal!';
         descEl.textContent = err.message || 'Terjadi kesalahan saat membaca file excel.';
         statusEl.innerHTML = `
