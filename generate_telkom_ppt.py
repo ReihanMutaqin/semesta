@@ -21,6 +21,8 @@ def create_telkom_presentation():
     TEXT_DARK = RGBColor(30, 41, 59)          # #1E293B
     TEXT_MUTED = RGBColor(100, 116, 139)      # #64748B
     EMERALD_GREEN = RGBColor(16, 185, 129)    # #10B981
+    CYAN_BLUE = RGBColor(6, 182, 212)         # #06B6D4
+    PURPLE_ACC = RGBColor(168, 85, 247)       # #A855F7
     WHITE = RGBColor(255, 255, 255)
 
     def add_header(slide, title_text, category_text="LAPORAN ANALISIS DATA SEMESTA"):
@@ -145,7 +147,7 @@ def create_telkom_presentation():
     # 4 Large Metric Cards
     metrics = [
         ("TOTAL ORDER SEMESTA", "88.011", "Order Semesta Terdaftar", "80.795 Order PS Complete (91,8%)", TELKOM_RED),
-        ("PS 1 BULAN KEBELAKANG", "5.910", "Order Selesai (30 Hari Terakhir)", "Didominasi Tipe CREATE & MODIFY", EMERALD_GREEN),
+        ("PS 1 BULAN KEBELAKANG", "5.910", "Order Selesai (30 Hari Terakhir)", "Didominasi Tipe CREATE (2.725) & MODIFY (2.109)", EMERALD_GREEN),
         ("RATA-RATA DURASI PS", "0,94 Hari", "~22,5 Jam (Tipe CREATE)", "Rata-rata DISCONNECT: 0,44 Hari (10,6 Jam)", DARK_NAVY),
         ("ORDER PENDING TERLAMA", "220,9 Hari", "Order Pending Terlama (CREATE)", "Pending MODIFY: 217,9 Hari", TELKOM_RED)
     ]
@@ -156,19 +158,16 @@ def create_telkom_presentation():
         left = Inches(0.8 + col * 6.0)
         top = Inches(1.5 + row * 2.6)
 
-        # Card container
         card = slide2.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, Inches(5.6), Inches(2.3))
         card.fill.solid()
         card.fill.fore_color.rgb = CARD_BG
         card.line.color.rgb = CARD_BORDER
 
-        # Top Accent Line
         acc = slide2.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, Inches(5.6), Inches(0.12))
         acc.fill.solid()
         acc.fill.fore_color.rgb = accent_col
         acc.line.color.rgb = accent_col
 
-        # Text Frame inside card
         tf_card = card.text_frame
         tf_card.word_wrap = True
         tf_card.margin_left = Inches(0.2)
@@ -206,12 +205,10 @@ def create_telkom_presentation():
     add_header(slide3, "Rincian Metrik Utama per Tipe Transaksi (CRM Order Type)")
     add_footer(slide3)
 
-    # Table Layout
     rows, cols = 7, 7
     table_shape = slide3.shapes.add_table(rows, cols, Inches(0.6), Inches(1.4), Inches(12.133), Inches(5.2))
     table = table_shape.table
 
-    # Column Widths
     col_widths = [Inches(2.2), Inches(1.5), Inches(1.5), Inches(2.2), Inches(2.2), Inches(1.6), Inches(1.0)]
     for idx, width in enumerate(col_widths):
         table.columns[idx].width = width
@@ -259,11 +256,102 @@ def create_telkom_presentation():
                 p.font.bold = True
 
     # ==========================================
-    # SLIDE 4: BREAKDOWN SEGMENTASI (MODOROSO, PDA HSI, INDIHOME)
+    # SLIDE 4: DEDICATED SLIDE - JUMLAH PS 1 BULAN KEBELAKANG PER TIPE TRANSAKSI
     # ==========================================
     slide4 = prs.slides.add_slide(blank_layout)
-    add_header(slide4, "Breakdown Segmentasi Order: Modoroso, PDA HSI, & IndiHome")
+    add_header(slide4, "Rincian Jumlah PS 1 Bulan Kebelakang per Tipe Transaksi", "ANALISIS PERFORMA 30 HARI TERAKHIR")
     add_footer(slide4)
+
+    # 4 Focused Cards for PS 1 Month Back
+    ps_cards = [
+        ("CREATE / PASANG BARU", "2.725 PS", "46,1% dari Total PS Bulanan", "Rata-rata Durasi PS: 0,94 Hari (22,5 Jam)", TELKOM_RED),
+        ("MODIFY / UBAH PAKET", "2.109 PS", "35,7% dari Total PS Bulanan", "Rata-rata Durasi PS: 1,33 Hari (31,9 Jam)", DARK_NAVY),
+        ("DISCONNECT / CABUT", "905 PS", "15,3% dari Total PS Bulanan", "Rata-rata Durasi PS: 0,44 Hari (10,6 Jam)", CYAN_BLUE),
+        ("MIGRATE / MIGRASI", "167 PS", "2,8% dari Total PS Bulanan", "Rata-rata Durasi PS: 2,07 Hari (49,8 Jam)", PURPLE_ACC)
+    ]
+
+    for idx, (p_title, p_val, p_pct, p_avg, p_col) in enumerate(ps_cards):
+        left = Inches(0.6 + idx * 3.1)
+        top = Inches(1.5)
+
+        card = slide4.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, Inches(2.9), Inches(3.8))
+        card.fill.solid()
+        card.fill.fore_color.rgb = CARD_BG
+        card.line.color.rgb = CARD_BORDER
+
+        hbar = slide4.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, Inches(2.9), Inches(0.6))
+        hbar.fill.solid()
+        hbar.fill.fore_color.rgb = p_col
+        hbar.line.color.rgb = p_col
+
+        tf_h = hbar.text_frame
+        p_h = tf_h.paragraphs[0]
+        p_h.text = p_title
+        p_h.font.size = Pt(11)
+        p_h.font.bold = True
+        p_h.font.color.rgb = WHITE
+        p_h.alignment = PP_ALIGN.CENTER
+
+        tf_c = card.text_frame
+        tf_c.word_wrap = True
+        tf_c.margin_top = Inches(0.7)
+        tf_c.margin_left = Inches(0.15)
+
+        p_lbl = tf_c.paragraphs[0]
+        p_lbl.text = "JUMLAH PS (30 HARI)"
+        p_lbl.font.size = Pt(9)
+        p_lbl.font.bold = True
+        p_lbl.font.color.rgb = TEXT_MUTED
+
+        p_v = tf_c.add_paragraph()
+        p_v.text = p_val
+        p_v.font.size = Pt(30)
+        p_v.font.bold = True
+        p_v.font.color.rgb = p_col
+        p_v.space_before = Pt(3)
+
+        p_pct_lbl = tf_c.add_paragraph()
+        p_pct_lbl.text = p_pct
+        p_pct_lbl.font.size = Pt(10)
+        p_pct_lbl.font.bold = True
+        p_pct_lbl.font.color.rgb = TEXT_DARK
+        p_pct_lbl.space_before = Pt(6)
+
+        p_a = tf_c.add_paragraph()
+        p_a.text = p_avg
+        p_a.font.size = Pt(9.5)
+        p_a.font.color.rgb = TEXT_MUTED
+        p_a.space_before = Pt(6)
+
+    # Bottom Highlight Box summarizing total 5,910 PS
+    summary_box = slide4.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.6), Inches(5.5), Inches(12.133), Inches(1.3))
+    summary_box.fill.solid()
+    summary_box.fill.fore_color.rgb = DARK_NAVY
+    summary_box.line.color.rgb = DARK_NAVY
+
+    tf_s = summary_box.text_frame
+    tf_s.word_wrap = True
+    tf_s.margin_left = Inches(0.3)
+    tf_s.margin_top = Inches(0.2)
+
+    p_s_head = tf_s.paragraphs[0]
+    p_s_head.text = "INSIGHT UTAMA PERFORMA PS 1 BULAN KEBELAKANG (TOTAL: 5.910 PS)"
+    p_s_head.font.size = Pt(12)
+    p_s_head.font.bold = True
+    p_s_head.font.color.rgb = TELKOM_RED
+
+    p_s_desc = tf_s.add_paragraph()
+    p_s_desc.text = "• Sebanyak 81,8% dari total PS bulanan disumbangkan oleh aktivitas Pasang Baru (CREATE: 2.725 PS) & Perubahan Paket (MODIFY: 2.109 PS).\n• Kecepatan penyelesaian PS sangat responsif dengan rata-rata SLA CREATE 0,94 Hari (~22,5 Jam) & DISCONNECT 0,44 Hari (~10,6 Jam)."
+    p_s_desc.font.size = Pt(10.5)
+    p_s_desc.font.color.rgb = WHITE
+    p_s_desc.space_before = Pt(4)
+
+    # ==========================================
+    # SLIDE 5: BREAKDOWN SEGMENTASI (MODOROSO, PDA HSI, INDIHOME)
+    # ==========================================
+    slide5 = prs.slides.add_slide(blank_layout)
+    add_header(slide5, "Breakdown Segmentasi Order: Modoroso, PDA HSI, & IndiHome")
+    add_footer(slide5)
 
     seg_data = [
         ("MODOROSO", "26.058", "22.378 PS (85,9%)", "Rata-rata PS: 1,25 Hari", "Order Pending Terlama: 220,9 Hari", "PS 1 Bulan: 2.104", TELKOM_RED),
@@ -276,13 +364,12 @@ def create_telkom_presentation():
         left = Inches(0.6 + idx * 3.1)
         top = Inches(1.5)
 
-        card = slide4.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, Inches(2.9), Inches(5.2))
+        card = slide5.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, Inches(2.9), Inches(5.2))
         card.fill.solid()
         card.fill.fore_color.rgb = CARD_BG
         card.line.color.rgb = CARD_BORDER
 
-        # Header Accent Box inside Card
-        h_box = slide4.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, Inches(2.9), Inches(0.8))
+        h_box = slide5.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, Inches(2.9), Inches(0.8))
         h_box.fill.solid()
         h_box.fill.fore_color.rgb = col_acc
         h_box.line.color.rgb = col_acc
@@ -295,7 +382,6 @@ def create_telkom_presentation():
         p_h.font.color.rgb = WHITE
         p_h.alignment = PP_ALIGN.CENTER
 
-        # Content Text
         tf_c = card.text_frame
         tf_c.word_wrap = True
         tf_c.margin_top = Inches(0.9)
@@ -337,14 +423,13 @@ def create_telkom_presentation():
             p_val.font.color.rgb = txt_col
 
     # ==========================================
-    # SLIDE 5: ANALISIS ORDER TERLAMA & BOTTLENECK SLA
+    # SLIDE 6: ANALISIS ORDER TERLAMA & BOTTLENECK SLA
     # ==========================================
-    slide5 = prs.slides.add_slide(blank_layout)
-    add_header(slide5, "Analisis Kendala Order Terlama & Bottleneck SLA Operations")
-    add_footer(slide5)
+    slide6 = prs.slides.add_slide(blank_layout)
+    add_header(slide6, "Analisis Kendala Order Terlama & Bottleneck SLA Operations")
+    add_footer(slide6)
 
-    # Left Column: Key Findings
-    box_l = slide5.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.5), Inches(5.6), Inches(5.2))
+    box_l = slide6.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.5), Inches(5.6), Inches(5.2))
     box_l.fill.solid()
     box_l.fill.fore_color.rgb = CARD_BG
     box_l.line.color.rgb = CARD_BORDER
@@ -374,8 +459,7 @@ def create_telkom_presentation():
         p_item.font.color.rgb = TEXT_DARK
         p_item.space_before = Pt(10)
 
-    # Right Column: Actionable Recommendations
-    box_r = slide5.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.8), Inches(1.5), Inches(5.7), Inches(5.2))
+    box_r = slide6.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.8), Inches(1.5), Inches(5.7), Inches(5.2))
     box_r.fill.solid()
     box_r.fill.fore_color.rgb = CARD_BG
     box_r.line.color.rgb = CARD_BORDER
@@ -405,10 +489,17 @@ def create_telkom_presentation():
         p_rec.font.color.rgb = TEXT_DARK
         p_rec.space_before = Pt(10)
 
-    # Save presentation
-    output_path = r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom.pptx"
-    prs.save(output_path)
-    print(f"Presentation generated successfully at: {output_path}")
+    # Save presentation to both paths
+    paths = [
+        r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom_v2.pptx",
+        r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom.pptx"
+    ]
+    for output_path in paths:
+        try:
+            prs.save(output_path)
+            print(f"Presentation saved successfully at: {output_path}")
+        except Exception as e:
+            print(f"Could not write to {output_path} (file might be open): {e}")
 
 if __name__ == '__main__':
     create_telkom_presentation()
