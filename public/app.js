@@ -249,6 +249,33 @@ function processRawExcelRows(rows) {
     let minDateMs = Number.MAX_SAFE_INTEGER;
     let minDateStr = 'Belum Ada Data';
 
+    // ====================================================
+    // PASS 1: Scan ALL rows to find true maxDateMs & minDateMs
+    // (MUST be done before computing activeDurationDays)
+    // ====================================================
+    rows.forEach((r) => {
+        const dc = parseExcelDate(r['Date Created']);
+        const sd = parseExcelDate(r['Status Date']);
+        const dm = parseExcelDate(r['Date Modified']);
+
+        if (dc) {
+            const t = dc.getTime();
+            if (t > maxDateMs) { maxDateMs = t; maxDateStr = formatDateStr(dc); }
+            if (t < minDateMs) { minDateMs = t; minDateStr = formatDateStr(dc); }
+        }
+        if (sd) {
+            const t = sd.getTime();
+            if (t > maxDateMs) { maxDateMs = t; maxDateStr = formatDateStr(sd); }
+        }
+        if (dm) {
+            const t = dm.getTime();
+            if (t > maxDateMs) { maxDateMs = t; maxDateStr = formatDateStr(dm); }
+        }
+    });
+
+    // ====================================================
+    // PASS 2: Build order objects using the correct maxDateMs
+    // ====================================================
     const processedOrders = rows.map((r) => {
         const dateCreated = parseExcelDate(r['Date Created']);
         const statusDate = parseExcelDate(r['Status Date']);
@@ -256,23 +283,6 @@ function processRawExcelRows(rows) {
         const schedStart = parseExcelDate(r['Sched Start']);
         const bookingDate = parseExcelDate(r['Booking Date']);
         const measurementDate = parseExcelDate(r['Measurement Date']);
-
-        if (dateCreated && dateCreated.getTime() > maxDateMs) {
-            maxDateMs = dateCreated.getTime();
-            maxDateStr = formatDateStr(dateCreated);
-        }
-        if (statusDate && statusDate.getTime() > maxDateMs) {
-            maxDateMs = statusDate.getTime();
-            maxDateStr = formatDateStr(statusDate);
-        }
-        if (dateModified && dateModified.getTime() > maxDateMs) {
-            maxDateMs = dateModified.getTime();
-            maxDateStr = formatDateStr(dateModified);
-        }
-        if (dateCreated && dateCreated.getTime() < minDateMs) {
-            minDateMs = dateCreated.getTime();
-            minDateStr = formatDateStr(dateCreated);
-        }
 
         const rawType = (r['CRM Order Type'] || 'UNSPECIFIED').toString().trim().toUpperCase();
         let crmType = rawType;
@@ -287,6 +297,7 @@ function processRawExcelRows(rows) {
             psDurationDays = (statusDate.getTime() - dateCreated.getTime()) / 86400000.0;
         }
 
+        // activeDurationDays now uses the TRUE final maxDateMs from Pass 1
         let activeDurationDays = null;
         if (isPs === 0 && dateCreated && maxDateMs > 0) {
             activeDurationDays = (maxDateMs - dateCreated.getTime()) / 86400000.0;
