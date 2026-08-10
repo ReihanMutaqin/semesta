@@ -4,7 +4,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const DB_PATH = path.join(__dirname, 'semesta.db');
 const SUMMARY_PATH = path.join(__dirname, 'summary.json');
@@ -16,6 +16,11 @@ const STATIC_DIR = path.join(__dirname, 'public');
 // Body parser for up to 200MB file upload
 app.use(express.raw({ limit: '200mb', type: '*/*' }));
 app.use(express.static(STATIC_DIR));
+
+// Serve index.html explicitly at root URL
+app.get('/', (req, res) => {
+    res.sendFile(path.join(STATIC_DIR, 'index.html'));
+});
 
 // Endpoint 1: Get Summary
 app.get('/api/summary', (req, res) => {
@@ -81,3 +86,5 @@ app.get('/api/orders', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Node Express Server running at http://localhost:${PORT}`);
 });
+
+module.exports = app;
