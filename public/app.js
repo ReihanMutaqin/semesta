@@ -1350,10 +1350,10 @@ function exportPPTReport() {
             .slice(0, 15)
         : [];
 
-    const pendingHeader7 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Segmen", "Witel", "Tgl Dibuat", "Durasi Pending"];
+    const pendingHeader7 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Status", "Segmen", "Witel", "Tgl Dibuat", "Durasi Pending"];
     let pendingTableRows = [pendingHeader7.map(h => ({
         text: h,
-        options: { fill: { color: DARK_NAVY }, fontSize: 9, bold: true, color: WHITE, align: 'center' }
+        options: { fill: { color: DARK_NAVY }, fontSize: 8.5, bold: true, color: WHITE, align: 'center' }
     }))];
 
     if (pendingOrders.length > 0) {
@@ -1364,42 +1364,46 @@ function exportPPTReport() {
             const durationColor = isVeryOld ? TELKOM_RED : (isOld ? 'D97706' : TEXT_DARK);
             const daysStr = `${o.active_duration_days.toFixed(1)} Hari`;
             const createdShort = o.date_created ? o.date_created.substring(0, 10) : '-';
-            const scTrunc = (o.sc_order_no || '-').substring(0, 22);
-            const custTrunc = (o.customer_name || 'N/A').substring(0, 18);
-            const witelTrunc = (o.witel || '-').substring(0, 12);
+            const scFull = o.sc_order_no || '-';               // FULL, tidak dipotong
+            const custTrunc = (o.customer_name || 'N/A').substring(0, 16);
+            const witelTrunc = (o.witel || '-').substring(0, 10);
+            const statusStr = o.status || '-';
 
             pendingTableRows.push([
-                { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
-                { text: scTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, bold: true } },
-                { text: custTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK } },
-                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_DARK, align: 'center' } },
-                { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
-                { text: witelTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
-                { text: createdShort, options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
-                { text: daysStr, options: { fill: { color: bg }, fontSize: 9, color: durationColor, bold: isVeryOld || isOld, align: 'center' } }
+                { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
+                { text: scFull, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK, bold: true } },
+                { text: custTrunc, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK } },
+                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: statusStr, options: { fill: { color: bg }, fontSize: 7.5, color: CYAN_BLUE, bold: true, align: 'center' } },
+                { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
+                { text: witelTrunc, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
+                { text: createdShort, options: { fill: { color: bg }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
+                { text: daysStr, options: { fill: { color: bg }, fontSize: 8.5, color: durationColor, bold: isVeryOld || isOld, align: 'center' } }
             ]);
         });
     } else {
         // Fallback static data if no upload
         [
-            ["1", "MYIR2026010000123", "PT. PRIMA NUSA", "CREATE", "Modoroso", "JAKSEL", "2026-01-02", "220.9 Hari"],
-            ["2", "SC10-2026010000456", "CV. MAJU JAYA", "MODIFY", "PDA HSI", "JAKTIM", "2026-01-05", "217.9 Hari"],
-            ["3", "DGPS-2026010000789", "KEMENDAG", "DISCONNECT", "PDA HSI", "JAKPUS", "2026-01-10", "217.4 Hari"],
-        ].forEach(([no, sc, cust, tipe, seg, witel, tgl, dur]) => {
+            ["1", "MYIR2026010000123", "PT. PRIMA NUSA", "CREATE", "OPEN", "Modoroso", "JAKSEL", "2026-01-02", "220.9 Hari"],
+            ["2", "SC10-2026010000456", "CV. MAJU JAYA", "MODIFY", "INPROG", "PDA HSI", "JAKTIM", "2026-01-05", "217.9 Hari"],
+            ["3", "DGPS-2026010000789", "KEMENDAG", "DISCONNECT", "OPEN", "PDA HSI", "JAKPUS", "2026-01-10", "217.4 Hari"],
+        ].forEach(([no, sc, cust, tipe, stat, seg, witel, tgl, dur]) => {
             pendingTableRows.push([
-                { text: no, options: { fill: { color: CARD_BG }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
-                { text: sc, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK, bold: true } },
-                { text: cust, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK } },
-                { text: tipe, options: { fill: { color: CARD_BG }, fontSize: 8.5, color: TEXT_DARK, align: 'center' } },
-                { text: seg, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
-                { text: witel, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
-                { text: tgl, options: { fill: { color: CARD_BG }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
-                { text: dur, options: { fill: { color: CARD_BG }, fontSize: 9, color: TELKOM_RED, bold: true, align: 'center' } }
+                { text: no, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
+                { text: sc, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK, bold: true } },
+                { text: cust, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK } },
+                { text: tipe, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: stat, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: CYAN_BLUE, bold: true, align: 'center' } },
+                { text: seg, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
+                { text: witel, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
+                { text: tgl, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
+                { text: dur, options: { fill: { color: CARD_BG }, fontSize: 8.5, color: TELKOM_RED, bold: true, align: 'center' } }
             ]);
         });
     }
 
-    slide7.addTable(pendingTableRows, { x: 0.4, y: 1.35, w: 12.533, colW: [0.4, 2.5, 2.0, 1.1, 1.4, 1.4, 1.4, 1.8] });
+    // colW total = 12.533 (9 kolom): No, SC Order, Pelanggan, Tipe, Status, Segmen, Witel, Tgl, Durasi
+    slide7.addTable(pendingTableRows, { x: 0.3, y: 1.35, w: 12.733, colW: [0.35, 2.85, 1.5, 0.9, 1.15, 1.2, 1.1, 1.35, 1.8] });
 
     // Legend
     slide7.addShape(pptx.shapes.RECTANGLE, { x: 0.4, y: 6.5, w: 0.2, h: 0.2, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
