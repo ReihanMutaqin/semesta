@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Environment Variables & Secrets (Prevent Public Leaks)
+.env
+.env.local
+.env.production
+serviceAccountKey.json
+
+# Heavy Database & Excel Files
+export.xlsx
+semesta.db
+*.sqlite
+*.sqlite3
+
+# Logs & Temporary Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System & IDE files
+.DS_Store
+.vscode/
+.idea/

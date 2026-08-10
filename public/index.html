@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Semesta Dashboard - Modoroso, PDA HSI & IndiHome</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            900: '#1e1b4b',
+                        },
+                        darkbg: '#0b0f19',
+                        darkcard: 'rgba(17, 24, 39, 0.75)',
+                        darkborder: 'rgba(255, 255, 255, 0.08)'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="app.css">
+</head>
+<body class="bg-darkbg text-slate-100 font-sans antialiased min-h-screen selection:bg-brand-500 selection:text-white">
+
+    <!-- Ambient background glow -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 -right-40 w-96 h-96 bg-cyan-600/15 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- Upload Progress Modal -->
+    <div id="upload-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl p-6 max-w-md w-full shadow-2xl text-center space-y-4">
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-brand-500/20 border border-brand-500/40 text-brand-400 flex items-center justify-center animate-bounce">
+                <i data-lucide="upload-cloud" class="w-7 h-7"></i>
+            </div>
+            <div>
+                <h3 id="upload-modal-title" class="text-lg font-bold text-white">Mengupload & Memproses Excel...</h3>
+                <p id="upload-modal-desc" class="text-xs text-slate-400 mt-1">Sistem sedang membaca file .xlsx baru, membuat database SQLite, dan memperbarui analitik semesta.</p>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="upload-progress-bar" class="bg-gradient-to-r from-brand-500 via-indigo-500 to-emerald-400 h-2 rounded-full animate-pulse" style="width: 100%"></div>
+            </div>
+            <p id="upload-modal-status" class="text-xs font-semibold text-brand-300">Mohon tunggu beberapa detik...</p>
+        </div>
+    </div>
+
+    <!-- ORDER DETAIL POPUP MODAL -->
+    <div id="detail-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-4xl w-full max-h-[90vh] shadow-2xl overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 id="modal-sc-order" class="text-base font-extrabold text-white tracking-wide">SC Order ID</h3>
+                            <span id="modal-status-badge" class="px-2.5 py-0.5 rounded text-xs font-bold badge-ps">Status</span>
+                            <span id="modal-segment-badge" class="px-2.5 py-0.5 rounded text-xs font-bold badge-modoroso">Segment</span>
+                        </div>
+                        <p id="modal-customer-witel" class="text-xs text-slate-400 mt-0.5">Pelanggan • Witel</p>
+                    </div>
+                </div>
+                <button id="btn-close-detail-modal" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body Grid -->
+            <div class="p-6 overflow-y-auto space-y-6 text-xs text-slate-300">
+                
+                <!-- Section 1: Information Utama & Pelanggan -->
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
+                        <i data-lucide="user" class="w-4 h-4"></i> Informasi Utama & Pelanggan
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">SC Order No / Track ID</span>
+                            <div id="md-sc-order-no" class="font-bold text-white break-all mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Workorder ID</span>
+                            <div id="md-workorder" class="font-bold text-slate-200 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">OSS Order ID</span>
+                            <div id="md-oss-order-id" class="font-semibold text-slate-200 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Nama Pelanggan</span>
+                            <div id="md-customer-name" class="font-bold text-emerald-400 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Nomor Telepon / Kontak</span>
+                            <div id="md-contact-number" class="font-semibold text-slate-200 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Service No</span>
+                            <div id="md-service-no" class="font-semibold text-cyan-300 mt-0.5">-</div>
+                        </div>
+                        <div class="sm:col-span-2 lg:col-span-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Alamat Pelanggan</span>
+                            <div id="md-address" class="font-medium text-slate-300 mt-0.5">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Detail Transaksi & Lokasi -->
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
+                        <i data-lucide="package" class="w-4 h-4"></i> Produk, Transaksi & Lokasi
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Nama Produk</span>
+                            <div id="md-product-name" class="font-bold text-white mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Tipe Produk</span>
+                            <div id="md-product-type" class="font-semibold text-slate-300 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">CRM Order Type</span>
+                            <div id="md-crm-order-type" class="font-bold text-indigo-300 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">WO Class</span>
+                            <div id="md-wo-class" class="font-semibold text-slate-300 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Owner Group</span>
+                            <div id="md-owner-group" class="font-semibold text-slate-300 mt-0.5 break-words">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Witel / Workzone</span>
+                            <div id="md-witel-workzone" class="font-bold text-amber-300 mt-0.5">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Status & Timeline Waktu -->
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
+                        <i data-lucide="clock" class="w-4 h-4"></i> Status & Durasi Waktu (SLA)
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Status Order</span>
+                            <div id="md-status" class="font-extrabold text-emerald-400 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Tanggal Created</span>
+                            <div id="md-date-created" class="font-semibold text-slate-200 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Tanggal PS (Status Date)</span>
+                            <div id="md-status-date" class="font-semibold text-slate-200 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Durasi PS (Jam / Hari)</span>
+                            <div id="md-ps-duration" class="font-bold text-emerald-300 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Sched Start / Booking Date</span>
+                            <div id="md-sched-booking" class="font-medium text-slate-300 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Tanggal Modified</span>
+                            <div id="md-date-modified" class="font-medium text-slate-300 mt-0.5">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Pengukuran, Kontrak & TIF Info -->
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i> Info Pengukuran & TIF
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">No. Kontrak (KB/KL/P8)</span>
+                            <div id="md-no-kontrak" class="font-semibold text-slate-200 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Area TIF / District TIF</span>
+                            <div id="md-tif-area" class="font-semibold text-slate-200 mt-0.5">-</div>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Hasil Pengukuran</span>
+                            <div id="md-measurement" class="font-semibold text-slate-200 mt-0.5">-</div>
+                        </div>
+                        <div class="sm:col-span-2 lg:col-span-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] uppercase font-semibold text-slate-500">Deskripsi Order</span>
+                            <div id="md-description" class="font-medium text-slate-300 mt-0.5 break-words">-</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between text-xs text-slate-400">
+                <span class="flex items-center gap-1.5">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                    Data Semesta Verified • 31 Atribut Lengkap
+                </span>
+                <button id="btn-modal-close-footer" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold shadow-lg shadow-brand-600/30 transition-all">
+                    Tutup Detail
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden File Input -->
+    <input type="file" id="file-input-xlsx" accept=".xlsx, .xls" class="hidden">
+
+    <div class="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+
+        <!-- HEADER BAR -->
+        <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-2xl">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 via-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/25">
+                    <i data-lucide="globe" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-2xl font-bold tracking-tight text-white">Dashboard Data Semesta</h1>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Live Data
+                        </span>
+                    </div>
+                    <p class="text-sm text-slate-400 mt-0.5">Analisis Terpadu Order Modoroso • PDA HSI • IndiHome (`export.xlsx`)</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="px-4 py-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-xs text-slate-300 flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4 text-brand-400"></i>
+                    <span>Acuan Data: <strong id="header-max-date" class="text-white">Loading...</strong></span>
+                </div>
+                <div class="px-4 py-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-xs text-slate-300 flex items-center gap-2">
+                    <i data-lucide="database" class="w-4 h-4 text-cyan-400"></i>
+                    <span>Total Record: <strong id="header-total-records" class="text-white">88.011 Order</strong></span>
+                </div>
+                
+                <button id="btn-trigger-upload" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-lg shadow-emerald-600/30 flex items-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                    <span>Upload XLSX Baru</span>
+                </button>
+
+                <button id="btn-refresh" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium transition-all shadow-lg shadow-brand-600/30 flex items-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- KPI STATS CARDS -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="kpi-card p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-xl hover:border-brand-500/40 transition-all group">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Order Semesta</span>
+                    <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div id="kpi-total-orders" class="text-3xl font-extrabold text-white tracking-tight">88.011</div>
+                    <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        <span class="text-slate-300">Seluruh tipe transaksi & segmen</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="kpi-card p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-xl hover:border-emerald-500/40 transition-all group">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Order PS (Complete)</span>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i data-lucide="check-check" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpi-total-ps" class="text-3xl font-extrabold text-white tracking-tight">80.795</span>
+                        <span id="kpi-ps-percent" class="text-sm font-bold text-emerald-400">91.8%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
+                        <div id="kpi-ps-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-1.5 rounded-full" style="width: 91.8%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kpi-card p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-xl hover:border-cyan-500/40 transition-all group">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">PS 1 Bulan Kebelakang</span>
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div id="kpi-ps-last-month" class="text-3xl font-extrabold text-white tracking-tight">5.910</div>
+                    <p class="text-xs text-slate-400 mt-1">30 hari terakhir dari tanggal acuan</p>
+                </div>
+            </div>
+
+            <div class="kpi-card p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-xl hover:border-amber-500/40 transition-all group">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Order Terlama & Rata-rata</span>
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i data-lucide="clock" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4 space-y-1">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400">Order Terlama (Pending):</span>
+                        <span class="font-bold text-rose-400">220.9 Hari</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400">Rata-rata PS CREATE:</span>
+                        <span class="font-bold text-emerald-400">0.94 Hari (~22.5 Jam)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ANSWER SUMMARY TABLE PER TIPE TRANSAKSI -->
+        <section class="p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-2xl space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-darkborder pb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-400"></i>
+                        Ringkasan Utama per Tipe Transaksi (Klik Baris untuk Filter Detail)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Jawaban langsung untuk order terlama, rata-rata durasi PS, dan jumlah PS 1 bulan kebelakang. Klik baris manapun untuk memfilter data order di bawah!</p>
+                </div>
+                <span class="px-3 py-1 rounded-lg text-xs font-medium bg-brand-500/10 text-brand-300 border border-brand-500/20">
+                    Data Semesta Validated
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800 bg-slate-900/40">
+                            <th class="py-3.5 px-4 font-semibold">Tipe Transaksi</th>
+                            <th class="py-3.5 px-4 font-semibold text-right">Total Order</th>
+                            <th class="py-3.5 px-4 font-semibold text-right">Total PS</th>
+                            <th class="py-3.5 px-4 font-semibold text-right">Rata-rata Durasi PS</th>
+                            <th class="py-3.5 px-4 font-semibold text-right">Order Terlama (Pending)</th>
+                            <th class="py-3.5 px-4 font-semibold text-right">Durasi PS Terlama</th>
+                            <th class="py-3.5 px-4 font-semibold text-right">PS 1 Bulan Kebelakang</th>
+                        </tr>
+                    </thead>
+                    <tbody id="type-summary-tbody" class="divide-y divide-slate-800/60 font-medium">
+                        <!-- Rows injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- VISUALIZATION CHARTS GRID -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-brand-400"></i>
+                        Komposisi Order per Tipe Transaksi
+                    </h3>
+                </div>
+                <div class="h-64 relative">
+                    <canvas id="chart-crm-types"></canvas>
+                </div>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4 text-emerald-400"></i>
+                        Rata-rata Durasi PS (Jam)
+                    </h3>
+                </div>
+                <div class="h-64 relative">
+                    <canvas id="chart-avg-ps"></canvas>
+                </div>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-cyan-400"></i>
+                        Breakdown Segmentasi Data Semesta
+                    </h3>
+                </div>
+                <div class="h-64 relative">
+                    <canvas id="chart-segment"></canvas>
+                </div>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-4 h-4 text-amber-400"></i>
+                        Tren Order & PS (30 Hari Terakhir)
+                    </h3>
+                </div>
+                <div class="h-64 relative">
+                    <canvas id="chart-trend"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEGMENTATION CARDS -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="grid" class="w-5 h-5 text-cyan-400"></i>
+                    Rincian Segmentasi (Klik Kartu untuk Filter Detail)
+                </h2>
+                <span class="text-xs text-slate-400">Klik kartu segmen untuk memfilter tabel di bawah</span>
+            </div>
+            <div id="segment-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                <!-- Injected via JS -->
+            </div>
+        </section>
+
+        <!-- REAL-TIME DATA EXPLORER & TABLE -->
+        <section id="real-time-explorer-section" class="p-6 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-2xl space-y-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-darkborder pb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="search" class="w-5 h-5 text-brand-400"></i>
+                        Eksplorasi Data Order Semesta (Klik Baris Order untuk Popup Rinci!)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Cari, filter, dan klik baris order manapun untuk membuka Popup Detail 31 Atribut Lengkap</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span id="showing-records-badge" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                        Menampilkan 0 dari 0
+                    </span>
+                </div>
+            </div>
+
+            <!-- FILTERS CONTROLS BAR -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div class="lg:col-span-2 relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
+                    <input type="text" id="filter-search" placeholder="Cari SC Order No, Workorder, Customer, Witel, Alamat..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
+                </div>
+
+                <div>
+                    <select id="filter-segment" class="w-full px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <option value="">Semua Segmen</option>
+                        <option value="Modoroso">Modoroso</option>
+                        <option value="PDA HSI">PDA HSI</option>
+                        <option value="IndiHome">IndiHome</option>
+                        <option value="Enterprise / Lainnya">Enterprise / Lainnya</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="filter-crm-type" class="w-full px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <option value="">Semua Tipe Transaksi</option>
+                        <option value="CREATE">CREATE</option>
+                        <option value="MODIFY">MODIFY</option>
+                        <option value="DISCONNECT">DISCONNECT</option>
+                        <option value="SUSPEND">SUSPEND</option>
+                        <option value="MIGRATE">MIGRATE</option>
+                        <option value="RESUME">RESUME</option>
+                        <option value="UNSPECIFIED">UNSPECIFIED</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="filter-status" class="w-full px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <option value="">Semua Status</option>
+                        <option value="COMPLETE">COMPLETE</option>
+                        <option value="COMPWORK">COMPWORK</option>
+                        <option value="CANCLWORK">CANCLWORK</option>
+                        <option value="WAPPR">WAPPR</option>
+                        <option value="STARTWORK">STARTWORK</option>
+                        <option value="WORKFAIL">WORKFAIL</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- TABLE -->
+            <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/30">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-slate-400 uppercase tracking-wider bg-slate-900/90 border-b border-slate-800 font-semibold">
+                            <th class="py-3 px-4">SC Order No / Track ID</th>
+                            <th class="py-3 px-4">Customer & Witel</th>
+                            <th class="py-3 px-4">Produk & Segmen</th>
+                            <th class="py-3 px-4">Tipe Transaksi</th>
+                            <th class="py-3 px-4">Status</th>
+                            <th class="py-3 px-4">Tgl Created</th>
+                            <th class="py-3 px-4">Tgl PS (Status)</th>
+                            <th class="py-3 px-4 text-right">Durasi PS / Pending Age</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-tbody" class="divide-y divide-slate-800/60 font-medium">
+                        <!-- Dynamic rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINATION CONTROLS -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                <div class="text-xs text-slate-400">
+                    Halaman <strong id="current-page-num" class="text-white">1</strong> dari <strong id="total-pages-num" class="text-white">1</strong>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="btn-first" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i data-lucide="chevrons-left" class="w-4 h-4"></i>
+                    </button>
+                    <button id="btn-prev" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i> Prev
+                    </button>
+                    <button id="btn-next" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
+                        Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                    <button id="btn-last" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i data-lucide="chevrons-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="text-center text-xs text-slate-500 py-4">
+            <p>Data Semesta Analytics Dashboard • Modoroso, PDA HSI & IndiHome • Built for Telkom Operations</p>
+        </footer>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

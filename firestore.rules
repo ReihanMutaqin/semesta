@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Summary metrics collection: Public read, Admin write
+    match /summary/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Orders collection: Public read, Admin write
+    match /orders/{orderId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Default fallback
+    match /{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "summary": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "orders": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    ".read": true,
+    ".write": "auth != null"
+  }
+}
