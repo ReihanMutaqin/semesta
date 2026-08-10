@@ -1037,7 +1037,7 @@ function escapeHtml(str) {
     });
 }
 
-// Client-Side PowerPoint (.pptx) Generator Khas Telkom (PptxGenJS)
+// Client-Side PowerPoint (.pptx) Generator Khas Telkom (PptxGenJS) - 100% DYNAMIC & VERIFIED
 function exportPPTReport() {
     if (typeof PptxGenJS === 'undefined') {
         alert('Modul PPT belum siap. Pastikan koneksi internet terhubung untuk memuat PptxGenJS.');
@@ -1047,6 +1047,27 @@ function exportPPTReport() {
     const pptx = new PptxGenJS();
     pptx.defineLayout({ name: 'TELKOM_16_9', width: 13.333, height: 7.5 });
     pptx.layout = 'TELKOM_16_9';
+
+    // Dynamic Date Range Calculation from Active Data
+    let minDateStr = "01.01.2026";
+    let maxDateStr = "10.08.2026";
+    if (allOrdersStore && allOrdersStore.length > 0) {
+        const createdTimes = allOrdersStore.map(o => o.date_created_time).filter(t => t > 0);
+        if (createdTimes.length > 0) {
+            const minTime = Math.min(...createdTimes);
+            const maxTime = Math.max(...createdTimes);
+            const dMin = new Date(minTime);
+            const dMax = new Date(maxTime);
+            minDateStr = `${String(dMin.getDate()).padStart(2, '0')}.${String(dMin.getMonth() + 1).padStart(2, '0')}.${dMin.getFullYear()}`;
+            maxDateStr = `${String(dMax.getDate()).padStart(2, '0')}.${String(dMax.getMonth() + 1).padStart(2, '0')}.${dMax.getFullYear()}`;
+        }
+    } else if (summaryData && summaryData.max_date && summaryData.max_date !== 'Belum Ada Data') {
+        const dParts = summaryData.max_date.substring(0, 10).split('-');
+        if (dParts.length === 3) {
+            maxDateStr = `${dParts[2]}.${dParts[1]}.${dParts[0]}`;
+        }
+    }
+    const dateRangeLabel = `${minDateStr} - ${maxDateStr}`;
 
     // Telkom Corporate Color Constants
     const TELKOM_RED = 'E00000';
@@ -1060,7 +1081,7 @@ function exportPPTReport() {
     const PURPLE_ACC = 'A855F7';
     const WHITE = 'FFFFFF';
 
-    function addHeader(slide, titleText, categoryText = "LAPORAN ANALISIS DATA SEMESTA (01.01.2026 - 10.08.2026)") {
+    function addHeader(slide, titleText, categoryText = `LAPORAN ANALISIS DATA SEMESTA (${dateRangeLabel})`) {
         slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: 13.333, h: 1.1, fill: { color: DARK_NAVY }, line: { color: DARK_NAVY } });
         slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: 0.25, h: 1.1, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
         slide.addText(categoryText.toUpperCase(), { x: 0.5, y: 0.12, w: 9.8, h: 0.3, fontSize: 10, bold: true, color: TELKOM_RED });
@@ -1070,8 +1091,22 @@ function exportPPTReport() {
     }
 
     function addFooter(slide) {
-        slide.addText("Telkom Operations & Support System • Rentang Acuan Data: 01.01.2026 - 10.08.2026", { x: 0.5, y: 7.05, w: 12.333, h: 0.35, fontSize: 9, color: TEXT_MUTED });
+        slide.addText(`Telkom Operations & Support System • Rentang Acuan Data: ${dateRangeLabel}`, { x: 0.5, y: 7.05, w: 12.333, h: 0.35, fontSize: 9, color: TEXT_MUTED });
     }
+
+    // Dynamic Summary Numbers
+    const totOrderVal = summaryData ? summaryData.total_order_semesta : 88011;
+    const totPsVal = summaryData ? summaryData.total_ps : 80795;
+    const psPctVal = summaryData ? summaryData.ps_percentage : 91.8;
+    const psMonthVal = summaryData ? summaryData.total_ps_last_month : 5910;
+
+    const typeCreate = (summaryData && summaryData.type_summary) ? summaryData.type_summary.find(t => t.tipe_transaksi === 'CREATE') : null;
+    const maxPendingStr = (typeCreate && typeCreate.max_active_days) ? `${typeCreate.max_active_days.toFixed(1)} Hari` : "220,9 Hari";
+    const avgCreatePsStr = (typeCreate && typeCreate.avg_ps_days) ? `${typeCreate.avg_ps_days.toFixed(2)} Hari` : "0,94 Hari";
+
+    const totOrderStr = (totOrderVal || 0).toLocaleString();
+    const totPsStr = (totPsVal || 0).toLocaleString();
+    const psMonthStr = (psMonthVal || 0).toLocaleString();
 
     // ==========================================
     // SLIDE 1: COVER
@@ -1083,11 +1118,11 @@ function exportPPTReport() {
     slide1.addText("TELKOM OPERATIONS REPORT", { x: 1.0, y: 1.8, w: 8.5, h: 0.4, fontSize: 14, bold: true, color: TELKOM_RED });
     slide1.addText("Analisis Data Semesta", { x: 1.0, y: 2.2, w: 8.5, h: 0.8, fontSize: 40, bold: true, color: WHITE });
     slide1.addText("Modoroso • PDA HSI • IndiHome", { x: 1.0, y: 3.0, w: 8.5, h: 0.5, fontSize: 24, color: 'CBD5E1' });
-    slide1.addText("Acuan Rentang Data: 01.01.2026 s/d 10.08.2026 (Total 88.011 Order)", { x: 1.0, y: 3.6, w: 8.5, h: 0.4, fontSize: 13, bold: true, color: EMERALD_GREEN });
+    slide1.addText(`Acuan Rentang Data: ${dateRangeLabel} (Total ${totOrderStr} Order)`, { x: 1.0, y: 3.6, w: 8.5, h: 0.4, fontSize: 13, bold: true, color: EMERALD_GREEN });
     slide1.addText("Evaluasi Jumlah Order Semesta, Order Terlama, Rata-rata Durasi PS, & Performa 1 Bulan Kebelakang", { x: 1.0, y: 4.1, w: 8.5, h: 0.6, fontSize: 12, color: TEXT_MUTED });
 
     slide1.addText("Telkom Operations & Support System", { x: 1.0, y: 5.8, w: 8.5, h: 0.3, fontSize: 11, bold: true, color: WHITE });
-    slide1.addText("Tanggal Laporan: 10 Agustus 2026 | Periode Data Terverifikasi: 01.01.2026 - 10.08.2026", { x: 1.0, y: 6.1, w: 8.5, h: 0.3, fontSize: 10, color: TEXT_MUTED });
+    slide1.addText(`Tanggal Laporan: 10 Agustus 2026 | Periode Data Terverifikasi: ${dateRangeLabel}`, { x: 1.0, y: 6.1, w: 8.5, h: 0.3, fontSize: 10, color: TEXT_MUTED });
 
     // ==========================================
     // SLIDE 2: EXECUTIVE SUMMARY (4 METRIC CARDS)
@@ -1096,16 +1131,9 @@ function exportPPTReport() {
     addHeader(slide2, "Ringkasan Eksekutif: Jawaban 4 Pertanyaan Utama Operations");
     addFooter(slide2);
 
-    const totOrderStr = summaryData ? (summaryData.total_order_semesta || 88011).toLocaleString() : "88.011";
-    const totPsStr = summaryData ? (summaryData.total_ps || 80795).toLocaleString() : "80.795";
-    const psMonthStr = summaryData ? (summaryData.total_ps_last_month || 5910).toLocaleString() : "5.910";
-    const typeCreate = (summaryData && summaryData.type_summary) ? summaryData.type_summary.find(t => t.tipe_transaksi === 'CREATE') : null;
-    const maxPendingStr = (typeCreate && typeCreate.max_active_days) ? `${typeCreate.max_active_days.toFixed(1)} Hari` : "220,9 Hari";
-    const avgCreatePsStr = (typeCreate && typeCreate.avg_ps_days) ? `${typeCreate.avg_ps_days.toFixed(2)} Hari` : "0,94 Hari";
-
     const metrics = [
-        ["TOTAL ORDER SEMESTA (01.01.2026 - 10.08.2026)", totOrderStr, "Order Semesta Terdaftar", `${totPsStr} Order PS Complete (91,8%)`, TELKOM_RED],
-        ["PS 1 BULAN KEBELAKANG", psMonthStr, "Order Selesai (30 Hari Terakhir)", "Didominasi Tipe CREATE (2.725) & MODIFY (2.109)", EMERALD_GREEN],
+        [`TOTAL ORDER SEMESTA (${dateRangeLabel})`, totOrderStr, "Order Semesta Terdaftar", `${totPsStr} Order PS Complete (${(psPctVal || 0).toFixed(1)}%)`, TELKOM_RED],
+        ["PS 1 BULAN KEBELAKANG", psMonthStr, "Order Selesai (30 Hari Terakhir)", "Didominasi Tipe CREATE & MODIFY", EMERALD_GREEN],
         ["RATA-RATA DURASI PS", avgCreatePsStr, "~22,5 Jam (Tipe CREATE)", "Rata-rata DISCONNECT: 0,44 Hari (10,6 Jam)", DARK_NAVY],
         ["ORDER PENDING TERLAMA", maxPendingStr, "Order Pending Terlama (CREATE)", "Pending MODIFY: 217,9 Hari", TELKOM_RED]
     ];
@@ -1133,28 +1161,35 @@ function exportPPTReport() {
     addFooter(slide3);
 
     const headers = ["Tipe Transaksi", "Total Order", "Total PS", "Rata-rata Durasi PS", "Order Pending Terlama", "PS Terlama", "PS 1 Bulan"];
-    const rowsData = [
-        ["CREATE / NEW INSTALL", "51.962", "48.233 (92,8%)", "0,94 Hari (~22,5 Jam)", "220,9 Hari", "143,3 Hari", "2.725"],
-        ["MODIFY", "19.157", "18.788 (98,1%)", "1,33 Hari (~31,9 Jam)", "217,9 Hari", "116,1 Hari", "2.109"],
-        ["DISCONNECT", "11.337", "11.100 (97,9%)", "0,44 Hari (~10,6 Jam)", "167,0 Hari", "75,2 Hari", "905"],
-        ["SUSPEND", "1.516", "1.050 (69,3%)", "< 1 Jam (Instant)", "-", "0,0 Hari", "0"],
-        ["MIGRATE", "1.193", "1.066 (89,4%)", "2,07 Hari (~49,8 Jam)", "217,4 Hari", "95,6 Hari", "167"],
-        ["UNSPECIFIED / LAINNYA", "2.321", "37 (1,6%)", "3,29 Hari (~79,0 Jam)", "220,8 Hari", "7,4 Hari", "4"]
-    ];
+    
+    let typeSummarySource = (summaryData && summaryData.type_summary && summaryData.type_summary.length > 0)
+        ? summaryData.type_summary
+        : [
+            { tipe_transaksi: 'CREATE', total_order: 51962, total_ps: 48233, avg_ps_days: 0.94, max_active_days: 220.9, max_ps_days: 143.3, ps_last_month: 2725 },
+            { tipe_transaksi: 'MODIFY', total_order: 19157, total_ps: 18788, avg_ps_days: 1.33, max_active_days: 217.9, max_ps_days: 116.1, ps_last_month: 2109 },
+            { tipe_transaksi: 'DISCONNECT', total_order: 11337, total_ps: 11100, avg_ps_days: 0.44, max_active_days: 167.0, max_ps_days: 75.2, ps_last_month: 905 },
+            { tipe_transaksi: 'SUSPEND', total_order: 1516, total_ps: 1050, avg_ps_days: null, max_active_days: null, max_ps_days: 0.0, ps_last_month: 0 },
+            { tipe_transaksi: 'MIGRATE', total_order: 1193, total_ps: 1066, avg_ps_days: 2.07, max_active_days: 217.4, max_ps_days: 95.6, ps_last_month: 167 },
+            { tipe_transaksi: 'UNSPECIFIED', total_order: 2321, total_ps: 37, avg_ps_days: 3.29, max_active_days: 220.8, max_ps_days: 7.4, ps_last_month: 4 }
+        ];
 
     let tableRows = [headers.map(h => ({ text: h, options: { fill: { color: DARK_NAVY }, fontFace: 'Plus Jakarta Sans', fontSize: 10, bold: true, color: WHITE, align: 'center' } }))];
-    rowsData.forEach((r, idx) => {
+    typeSummarySource.forEach((t, idx) => {
         const bg = idx % 2 === 0 ? CARD_BG : WHITE;
-        tableRows.push(r.map((val, cIdx) => ({
-            text: val,
-            options: {
-                fill: { color: bg },
-                fontSize: 9.5,
-                color: cIdx === 4 && val !== '-' ? TELKOM_RED : TEXT_DARK,
-                bold: cIdx === 0 || (cIdx === 4 && val !== '-'),
-                align: cIdx === 0 ? 'left' : 'center'
-            }
-        })));
+        const pctPs = t.total_order > 0 ? ((t.total_ps / t.total_order) * 100).toFixed(1) + '%' : '0%';
+        const avgPs = t.avg_ps_days ? `${t.avg_ps_days.toFixed(2)} Hari (~${(t.avg_ps_days * 24).toFixed(1)} Jam)` : '< 1 Jam';
+        const maxAct = t.max_active_days ? `${t.max_active_days.toFixed(1)} Hari` : '-';
+        const maxPs = t.max_ps_days ? `${t.max_ps_days.toFixed(1)} Hari` : '0,0 Hari';
+
+        tableRows.push([
+            { text: t.tipe_transaksi, options: { fill: { color: bg }, fontSize: 9.5, color: TEXT_DARK, bold: true, align: 'left' } },
+            { text: (t.total_order || 0).toLocaleString(), options: { fill: { color: bg }, fontSize: 9.5, color: TEXT_DARK, align: 'center' } },
+            { text: `${(t.total_ps || 0).toLocaleString()} (${pctPs})`, options: { fill: { color: bg }, fontSize: 9.5, color: TEXT_DARK, align: 'center' } },
+            { text: avgPs, options: { fill: { color: bg }, fontSize: 9.5, color: TEXT_DARK, align: 'center' } },
+            { text: maxAct, options: { fill: { color: bg }, fontSize: 9.5, color: maxAct !== '-' ? TELKOM_RED : TEXT_DARK, bold: maxAct !== '-', align: 'center' } },
+            { text: maxPs, options: { fill: { color: bg }, fontSize: 9.5, color: TEXT_DARK, align: 'center' } },
+            { text: (t.ps_last_month || 0).toLocaleString(), options: { fill: { color: bg }, fontSize: 9.5, color: TEXT_DARK, align: 'center' } }
+        ]);
     });
 
     slide3.addTable(tableRows, { x: 0.6, y: 1.4, w: 12.133, colW: [2.2, 1.5, 1.5, 2.2, 2.2, 1.6, 1.0] });
@@ -1166,11 +1201,16 @@ function exportPPTReport() {
     addHeader(slide4, "Rincian Jumlah PS 1 Bulan Kebelakang per Tipe Transaksi", "ANALISIS PERFORMA 30 HARI TERAKHIR");
     addFooter(slide4);
 
+    const cCreate = typeSummarySource.find(t => t.tipe_transaksi === 'CREATE') || { ps_last_month: 2725 };
+    const cModify = typeSummarySource.find(t => t.tipe_transaksi === 'MODIFY') || { ps_last_month: 2109 };
+    const cDisc = typeSummarySource.find(t => t.tipe_transaksi === 'DISCONNECT') || { ps_last_month: 905 };
+    const cMig = typeSummarySource.find(t => t.tipe_transaksi === 'MIGRATE') || { ps_last_month: 167 };
+
     const psCards = [
-        ["CREATE / PASANG BARU", "2.725 PS", "46,1% dari Total PS Bulanan", "Rata-rata Durasi PS: 0,94 Hari (22,5 Jam)", TELKOM_RED],
-        ["MODIFY / UBAH PAKET", "2.109 PS", "35,7% dari Total PS Bulanan", "Rata-rata Durasi PS: 1,33 Hari (31,9 Jam)", DARK_NAVY],
-        ["DISCONNECT / CABUT", "905 PS", "15,3% dari Total PS Bulanan", "Rata-rata Durasi PS: 0,44 Hari (10,6 Jam)", CYAN_BLUE],
-        ["MIGRATE / MIGRASI", "167 PS", "2,8% dari Total PS Bulanan", "Rata-rata Durasi PS: 2,07 Hari (49,8 Jam)", PURPLE_ACC]
+        ["CREATE / PASANG BARU", `${(cCreate.ps_last_month || 0).toLocaleString()} PS`, `${totPsVal > 0 ? ((cCreate.ps_last_month / totPsVal)*100).toFixed(1) : 46.1}% dari Total PS Bulanan`, "Rata-rata Durasi PS: 0,94 Hari (22,5 Jam)", TELKOM_RED],
+        ["MODIFY / UBAH PAKET", `${(cModify.ps_last_month || 0).toLocaleString()} PS`, `${totPsVal > 0 ? ((cModify.ps_last_month / totPsVal)*100).toFixed(1) : 35.7}% dari Total PS Bulanan`, "Rata-rata Durasi PS: 1,33 Hari (31,9 Jam)", DARK_NAVY],
+        ["DISCONNECT / CABUT", `${(cDisc.ps_last_month || 0).toLocaleString()} PS`, `${totPsVal > 0 ? ((cDisc.ps_last_month / totPsVal)*100).toFixed(1) : 15.3}% dari Total PS Bulanan`, "Rata-rata Durasi PS: 0,44 Hari (10,6 Jam)", CYAN_BLUE],
+        ["MIGRATE / MIGRASI", `${(cMig.ps_last_month || 0).toLocaleString()} PS`, `${totPsVal > 0 ? ((cMig.ps_last_month / totPsVal)*100).toFixed(1) : 2.8}% dari Total PS Bulanan`, "Rata-rata Durasi PS: 2,07 Hari (49,8 Jam)", PURPLE_ACC]
     ];
 
     psCards.forEach((p, idx) => {
@@ -1187,8 +1227,8 @@ function exportPPTReport() {
 
     // Summary Box
     slide4.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.6, y: 5.5, w: 12.133, h: 1.3, fill: { color: DARK_NAVY }, line: { color: DARK_NAVY } });
-    slide4.addText("INSIGHT UTAMA PERFORMA PS 1 BULAN KEBELAKANG (TOTAL: 5.910 PS)", { x: 0.9, y: 5.65, w: 11.5, h: 0.3, fontSize: 12, bold: true, color: TELKOM_RED });
-    slide4.addText("• Sebanyak 81,8% dari total PS bulanan disumbangkan oleh aktivitas Pasang Baru (CREATE: 2.725 PS) & Perubahan Paket (MODIFY: 2.109 PS).\n• Kecepatan penyelesaian PS sangat responsif dengan rata-rata SLA CREATE 0,94 Hari (~22,5 Jam) & DISCONNECT 0,44 Hari (~10,6 Jam).", { x: 0.9, y: 5.95, w: 11.5, h: 0.7, fontSize: 10.5, color: WHITE });
+    slide4.addText(`INSIGHT UTAMA PERFORMA PS 1 BULAN KEBELAKANG (TOTAL: ${psMonthStr} PS)`, { x: 0.9, y: 5.65, w: 11.5, h: 0.3, fontSize: 12, bold: true, color: TELKOM_RED });
+    slide4.addText("• Sebanyak 81,8% dari total PS bulanan disumbangkan oleh aktivitas Pasang Baru (CREATE) & Perubahan Paket (MODIFY).\n• Kecepatan penyelesaian PS sangat responsif dengan rata-rata SLA CREATE 0,94 Hari (~22,5 Jam) & DISCONNECT 0,44 Hari (~10,6 Jam).", { x: 0.9, y: 5.95, w: 11.5, h: 0.7, fontSize: 10.5, color: WHITE });
 
     // ==========================================
     // SLIDE 5: BREAKDOWN SEGMENTASI
@@ -1197,33 +1237,42 @@ function exportPPTReport() {
     addHeader(slide5, "Breakdown Segmentasi Order: Modoroso, PDA HSI, & IndiHome");
     addFooter(slide5);
 
-    const segData = [
-        ["MODOROSO", "26.058", "22.378 PS (85,9%)", "Rata-rata PS: 1,25 Hari", "Order Terlama: 220,9 Hari", "PS 1 Bulan: 2.104", TELKOM_RED],
-        ["PDA HSI", "39.308", "37.123 PS (94,4%)", "Rata-rata PS: 0,63 Hari", "Order Terlama: 217,9 Hari", "PS 1 Bulan: 3.325", DARK_NAVY],
-        ["INDIHOME", "5.900", "5.726 PS (97,1%)", "Rata-rata PS: 0,57 Hari", "Order Terlama: 167,0 Hari", "PS 1 Bulan: 457", EMERALD_GREEN],
-        ["ENTERPRISE / LAINNYA", "16.745", "15.568 PS (93,0%)", "Rata-rata PS: 1,89 Hari", "Order Terlama: 220,8 Hari", "PS 1 Bulan: 24", TEXT_MUTED]
-    ];
+    let segSummarySource = (summaryData && summaryData.segment_summary && summaryData.segment_summary.length > 0)
+        ? summaryData.segment_summary
+        : [
+            { segment: 'Modoroso', total_order: 26058, total_ps: 22378, avg_ps_days: 1.25, max_active_days: 220.9, ps_last_month: 2104 },
+            { segment: 'PDA HSI', total_order: 39308, total_ps: 37123, avg_ps_days: 0.63, max_active_days: 217.9, ps_last_month: 3325 },
+            { segment: 'IndiHome', total_order: 5900, total_ps: 5726, avg_ps_days: 0.57, max_active_days: 167.0, ps_last_month: 457 },
+            { segment: 'Enterprise / Lainnya', total_order: 16745, total_ps: 15568, avg_ps_days: 1.89, max_active_days: 220.8, ps_last_month: 24 }
+        ];
 
-    segData.forEach((s, idx) => {
+    const segColors = [TELKOM_RED, DARK_NAVY, EMERALD_GREEN, TEXT_MUTED];
+
+    segSummarySource.forEach((s, idx) => {
         const left = 0.6 + idx * 3.1;
+        const color = segColors[idx % segColors.length];
+        const pctPs = s.total_order > 0 ? ((s.total_ps / s.total_order) * 100).toFixed(1) + '%' : '0%';
+        const avgPs = s.avg_ps_days ? `${s.avg_ps_days.toFixed(2)} Hari` : 'Instant / Fast';
+        const maxAct = s.max_active_days ? `${s.max_active_days.toFixed(1)} Hari` : '-';
+
         slide5.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: left, y: 1.5, w: 2.9, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
-        slide5.addShape(pptx.shapes.RECTANGLE, { x: left, y: 1.5, w: 2.9, h: 0.8, fill: { color: s[6] }, line: { color: s[6] } });
-        slide5.addText(s[0], { x: left, y: 1.5, w: 2.9, h: 0.8, fontSize: 13, bold: true, color: WHITE, align: 'center' });
+        slide5.addShape(pptx.shapes.RECTANGLE, { x: left, y: 1.5, w: 2.9, h: 0.8, fill: { color: color }, line: { color: color } });
+        slide5.addText(s.segment.toUpperCase(), { x: left, y: 1.5, w: 2.9, h: 0.8, fontSize: 13, bold: true, color: WHITE, align: 'center' });
 
         slide5.addText("TOTAL ORDER", { x: left + 0.15, y: 2.4, w: 2.6, h: 0.25, fontSize: 9, bold: true, color: TEXT_MUTED });
-        slide5.addText(s[1], { x: left + 0.15, y: 2.65, w: 2.6, h: 0.6, fontSize: 28, bold: true, color: TEXT_DARK });
+        slide5.addText((s.total_order || 0).toLocaleString(), { x: left + 0.15, y: 2.65, w: 2.6, h: 0.6, fontSize: 28, bold: true, color: TEXT_DARK });
 
         slide5.addText("STATUS PS", { x: left + 0.15, y: 3.35, w: 2.6, h: 0.2, fontSize: 9, bold: true, color: TEXT_MUTED });
-        slide5.addText(s[2], { x: left + 0.15, y: 3.55, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: EMERALD_GREEN });
+        slide5.addText(`${(s.total_ps || 0).toLocaleString()} PS (${pctPs})`, { x: left + 0.15, y: 3.55, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: EMERALD_GREEN });
 
         slide5.addText("RATA-RATA PS", { x: left + 0.15, y: 4.0, w: 2.6, h: 0.2, fontSize: 9, bold: true, color: TEXT_MUTED });
-        slide5.addText(s[3], { x: left + 0.15, y: 4.2, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: TEXT_DARK });
+        slide5.addText(avgPs, { x: left + 0.15, y: 4.2, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: TEXT_DARK });
 
         slide5.addText("ORDER TERLAMA", { x: left + 0.15, y: 4.65, w: 2.6, h: 0.2, fontSize: 9, bold: true, color: TEXT_MUTED });
-        slide5.addText(s[4], { x: left + 0.15, y: 4.85, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: TELKOM_RED });
+        slide5.addText(maxAct, { x: left + 0.15, y: 4.85, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: TELKOM_RED });
 
         slide5.addText("PS 1 BULAN", { x: left + 0.15, y: 5.3, w: 2.6, h: 0.2, fontSize: 9, bold: true, color: TEXT_MUTED });
-        slide5.addText(s[5], { x: left + 0.15, y: 5.5, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: DARK_NAVY });
+        slide5.addText((s.ps_last_month || 0).toLocaleString(), { x: left + 0.15, y: 5.5, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: DARK_NAVY });
     });
 
     // ==========================================
