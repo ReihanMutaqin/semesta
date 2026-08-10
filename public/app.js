@@ -289,17 +289,24 @@ function processRawExcelRows(rows) {
         if (rawType === 'NEW INSTALL') crmType = 'CREATE';
 
         const statusRaw = (r['Status'] || 'UNKNOWN').toString().trim().toUpperCase();
+
+        // PS = sudah selesai/dieksekusi
         const psStatuses = ['COMPLETE', 'COMPWORK', 'INSTCOMP', 'DEINSTCOMP', 'ACTCOMP', 'VALCOMP'];
+        // Cleared = dibatalkan/ditolak/ditutup → BUKAN pending, BUKAN PS
+        const clearedStatuses = ['CANCLWORK', 'CANCEL', 'CANCELWORK', 'REJECT', 'REJECTED', 'CLOSE', 'CLOSED', 'ABORT', 'ABORTED'];
+
         const isPs = psStatuses.includes(statusRaw) ? 1 : 0;
+        const isCleared = clearedStatuses.includes(statusRaw) ? 1 : 0;
 
         let psDurationDays = null;
         if (isPs === 1 && dateCreated && statusDate && statusDate >= dateCreated) {
             psDurationDays = (statusDate.getTime() - dateCreated.getTime()) / 86400000.0;
         }
 
-        // activeDurationDays now uses the TRUE final maxDateMs from Pass 1
+        // activeDurationDays = null jika sudah PS atau sudah Cleared (cancel/tutup)
+        // Hanya order yang masih AKTIF/PENDING yang dapat nilai ini
         let activeDurationDays = null;
-        if (isPs === 0 && dateCreated && maxDateMs > 0) {
+        if (isPs === 0 && isCleared === 0 && dateCreated && maxDateMs > 0) {
             activeDurationDays = (maxDateMs - dateCreated.getTime()) / 86400000.0;
         }
 
