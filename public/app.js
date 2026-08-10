@@ -117,8 +117,91 @@ function closeDetailModal() {
     document.getElementById('detail-modal').classList.add('hidden');
 }
 
-// Initial Data State Loader
+// High-Capacity IndexedDB Persistent Storage (Stores complete 88,000+ orders across page refreshes)
+const DB_NAME = 'SemestaDataDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'semesta_store';
+
+function openSemestaDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function saveSemestaToDB(summary, orders) {
+    try {
+        const db = await openSemestaDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+
+        // ERASE / CLEAR previous dataset completely when uploading a new file!
+        await new Promise((res, rej) => {
+            const clearReq = store.clear();
+            clearReq.onsuccess = res;
+            clearReq.onerror = rej;
+        });
+
+        // Store new dataset
+        store.put(summary, 'summaryData');
+        store.put(orders, 'allOrdersStore');
+
+        return new Promise((res, rej) => {
+            tx.oncomplete = res;
+            tx.onerror = rej;
+        });
+    } catch (err) {
+        console.warn('IndexedDB save failed:', err);
+    }
+}
+
+async function loadSemestaFromDB() {
+    try {
+        const db = await openSemestaDB();
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+
+        const sumReq = store.get('summaryData');
+        const ordReq = store.get('allOrdersStore');
+
+        return new Promise((resolve) => {
+            tx.oncomplete = () => {
+                resolve({
+                    summary: sumReq.result || null,
+                    orders: ordReq.result || null
+                });
+            };
+            tx.onerror = () => resolve({ summary: null, orders: null });
+        });
+    } catch (err) {
+        console.warn('IndexedDB load failed:', err);
+        return { summary: null, orders: null };
+    }
+}
+
+// Initial Data State Loader (Prioritizes high-speed IndexedDB cache so user never has to re-upload)
 async function initDataState() {
+    try {
+        const cached = await loadSemestaFromDB();
+        if (cached.summary && cached.orders && cached.orders.length > 0) {
+            summaryData = cached.summary;
+            allOrdersStore = cached.orders;
+            renderSummaryUI(summaryData);
+            currentPage = 1;
+            loadOrdersData();
+            return;
+        }
+    } catch (err) {
+        console.warn('DB load error, falling back to LocalStorage:', err);
+    }
+
     try {
         const savedSummary = localStorage.getItem('semesta_summary');
         if (savedSummary) {
@@ -201,18 +284,22 @@ async function handleClientFileUpload(file) {
         const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
         progressBar.style.width = '85%';
-        statusEl.textContent = `Berhasil membaca ${rawRows.length.toLocaleString()} baris. Menyusun dashboard...`;
+        statusEl.textContent = `Berhasil membaca ${rawRows.length.toLocaleString()} baris. Menyusun database...`;
 
         const processed = processRawExcelRows(rawRows);
         summaryData = processed.summary;
         allOrdersStore = processed.orders;
 
-        // Save to localStorage for quick reload
+        // Save to High-Capacity IndexedDB (ERASES old dataset first, then saves full 88,000+ rows)
+        statusEl.textContent = 'Menyimpan data baru & membersihkan database lama...';
+        await saveSemestaToDB(summaryData, allOrdersStore);
+
+        // Save to localStorage for quick summary fallback
         try {
             localStorage.setItem('semesta_summary', JSON.stringify(summaryData));
             localStorage.setItem('semesta_orders_sample', JSON.stringify(allOrdersStore.slice(0, 2000)));
         } catch (e) {
-            console.log('LocalStorage quota exceeded, keeping data in memory.');
+            console.log('LocalStorage quota exceeded, data safely stored in IndexedDB.');
         }
 
         progressBar.style.width = '100%';
