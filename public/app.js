@@ -1045,7 +1045,8 @@ function exportPPTReport() {
     }
 
     const pptx = new PptxGenJS();
-    pptx.layout = 'LAYOUT_16x9';
+    pptx.defineLayout({ name: 'TELKOM_16_9', width: 13.333, height: 7.5 });
+    pptx.layout = 'TELKOM_16_9';
 
     // Telkom Corporate Color Constants
     const TELKOM_RED = 'E00000';
@@ -1062,10 +1063,10 @@ function exportPPTReport() {
     function addHeader(slide, titleText, categoryText = "LAPORAN ANALISIS DATA SEMESTA (01.01.2026 - 10.08.2026)") {
         slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: 13.333, h: 1.1, fill: { color: DARK_NAVY }, line: { color: DARK_NAVY } });
         slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: 0.25, h: 1.1, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
-        slide.addText(categoryText.toUpperCase(), { x: 0.5, y: 0.12, w: 10, h: 0.3, fontSize: 10, bold: true, color: TELKOM_RED });
-        slide.addText(titleText, { x: 0.5, y: 0.38, w: 10.5, h: 0.6, fontSize: 20, bold: true, color: WHITE });
-        slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 11.2, y: 0.25, w: 1.8, h: 0.6, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
-        slide.addText("TELKOM INDONESIA", { x: 11.2, y: 0.25, w: 1.8, h: 0.6, fontSize: 11, bold: true, color: WHITE, align: 'center' });
+        slide.addText(categoryText.toUpperCase(), { x: 0.5, y: 0.12, w: 9.8, h: 0.3, fontSize: 10, bold: true, color: TELKOM_RED });
+        slide.addText(titleText, { x: 0.5, y: 0.38, w: 10.0, h: 0.6, fontSize: 20, bold: true, color: WHITE });
+        slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 10.8, y: 0.25, w: 2.2, h: 0.6, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
+        slide.addText("TELKOM INDONESIA", { x: 10.8, y: 0.25, w: 2.2, h: 0.6, fontSize: 11, bold: true, color: WHITE, align: 'center' });
     }
 
     function addFooter(slide) {
@@ -1112,16 +1113,16 @@ function exportPPTReport() {
     metrics.forEach((m, i) => {
         const col = i % 2;
         const row = Math.floor(i / 2);
-        const left = 0.8 + col * 6.0;
+        const left = 0.6 + col * 6.2;
         const top = 1.5 + row * 2.6;
 
-        slide2.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: left, y: top, w: 5.6, h: 2.3, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
-        slide2.addShape(pptx.shapes.RECTANGLE, { x: left, y: top, w: 5.6, h: 0.12, fill: { color: m[4] }, line: { color: m[4] } });
+        slide2.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: left, y: top, w: 5.8, h: 2.3, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+        slide2.addShape(pptx.shapes.RECTANGLE, { x: left, y: top, w: 5.8, h: 0.12, fill: { color: m[4] }, line: { color: m[4] } });
 
-        slide2.addText(m[0], { x: left + 0.2, y: top + 0.25, w: 5.2, h: 0.3, fontSize: 11, bold: true, color: TEXT_MUTED });
-        slide2.addText(m[1], { x: left + 0.2, y: top + 0.6, w: 5.2, h: 0.8, fontSize: 32, bold: true, color: m[4] });
-        slide2.addText(m[2], { x: left + 0.2, y: top + 1.45, w: 5.2, h: 0.3, fontSize: 11, bold: true, color: TEXT_DARK });
-        slide2.addText(m[3], { x: left + 0.2, y: top + 1.75, w: 5.2, h: 0.3, fontSize: 10, color: TEXT_MUTED });
+        slide2.addText(m[0], { x: left + 0.2, y: top + 0.25, w: 5.4, h: 0.3, fontSize: 11, bold: true, color: TEXT_MUTED });
+        slide2.addText(m[1], { x: left + 0.2, y: top + 0.6, w: 5.4, h: 0.8, fontSize: 32, bold: true, color: m[4] });
+        slide2.addText(m[2], { x: left + 0.2, y: top + 1.45, w: 5.4, h: 0.3, fontSize: 11, bold: true, color: TEXT_DARK });
+        slide2.addText(m[3], { x: left + 0.2, y: top + 1.75, w: 5.4, h: 0.3, fontSize: 10, color: TEXT_MUTED });
     });
 
     // ==========================================
