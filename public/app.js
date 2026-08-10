@@ -467,8 +467,8 @@ function processRawExcelRows(rows) {
 
         const statusRaw = (r['Status'] || 'UNKNOWN').toString().trim().toUpperCase();
 
-        // PS = sudah selesai/dieksekusi
-        const psStatuses = ['COMPLETE', 'COMPWORK', 'INSTCOMP', 'DEINSTCOMP', 'ACTCOMP', 'VALCOMP'];
+        // PS = hanya COMPLETE dan COMPWORK (sesuai instruksi)
+        const psStatuses = ['COMPLETE', 'COMPWORK'];
         // Cleared = dibatalkan/ditolak/gagal/ditutup → BUKAN pending, BUKAN PS
         const clearedStatuses = ['CANCLWORK', 'CANCEL', 'CANCELWORK', 'REJECT', 'REJECTED', 'CLOSE', 'CLOSED', 'ABORT', 'ABORTED', 'WORKFAIL', 'WAPFR', 'FAILWORK', 'FAILED'];
 
