@@ -1784,7 +1784,7 @@ function exportPPTReport() {
 
     const maxCreateDaysStr = (typeCreate12 && typeCreate12.max_active_days) ? `${typeCreate12.max_active_days.toFixed(1)} Hari` : "220,9 Hari";
     const maxModifyDaysStr = (typeModify12 && typeModify12.max_active_days) ? `${typeModify12.max_active_days.toFixed(1)} Hari` : "217,9 Hari";
-    const avgCreatePsStr = (typeCreate12 && typeCreate12.avg_ps_days) ? `${typeCreate12.avg_ps_days.toFixed(2)} Hari (~${(typeCreate12.avg_ps_hours || 0).toFixed(1)} Jam)` : "0,94 Hari (~22,5 Jam)";
+    const avgCreatePsStr12 = (typeCreate12 && typeCreate12.avg_ps_days) ? `${typeCreate12.avg_ps_days.toFixed(2)} Hari (~${(typeCreate12.avg_ps_hours || 0).toFixed(1)} Jam)` : "0,94 Hari (~22,5 Jam)";
     const avgMigratePsStr = (typeMigrate12 && typeMigrate12.avg_ps_days) ? `${typeMigrate12.avg_ps_days.toFixed(2)} Hari` : "2,07 Hari";
 
     let topPendingOrderInfo = "Modoroso (Witel JAKSEL)";
@@ -1803,7 +1803,7 @@ function exportPPTReport() {
         `Order Terlama Pending Mencapai ${maxCreateDaysStr} pada tipe transaksi CREATE dan ${maxModifyDaysStr} pada tipe MODIFY.`,
         `Konsentrasi Order Terlama ditemukan pada segmen ${topPendingOrderInfo}.`,
         "Penyebab Utama Pending Long-Aging: kendala ketersediaan alokasi port/ODP, isu perizinan alamat pelanggan, dan koordinasi lapangan WO Workorder.",
-        `Meskipun demikian, rata-rata durasi PS untuk transaksi baru (CREATE) sangat cepat yaitu ${avgCreatePsStr}.`
+        `Meskipun demikian, rata-rata durasi PS untuk transaksi baru (CREATE) sangat cepat yaitu ${avgCreatePsStr12}.`
     ];
     findings.forEach((f, idx) => {
         slide8.addText("• " + f, { x: 1.1, y: 2.3 + idx * 1.0, w: 5.0, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
