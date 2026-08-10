@@ -27,8 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupEventListeners() {
     document.getElementById('btn-refresh').addEventListener('click', () => {
-        loadSummaryData();
-        loadOrdersData();
+        initDataState();
     });
 
     const btnExportPPT = document.getElementById('btn-export-ppt');
@@ -248,9 +247,8 @@ async function loadFromFirebaseCloud() {
     }
 }
 
-// Initial Data State Loader (Loads from Firebase Cloud -> IndexedDB -> LocalStorage)
+// Initial Data State Loader (Loads strictly from Local IndexedDB Database)
 async function initDataState() {
-    // 1. Check IndexedDB local database (Instant load, 100% offline & local)
     try {
         const cached = await loadSemestaFromDB();
         if (cached.summary && cached.orders && cached.orders.length > 0) {
@@ -265,35 +263,33 @@ async function initDataState() {
         console.warn('IndexedDB load error:', err);
     }
 
-    // 2. Fetch from Firebase Cloud if local cache empty
+    // Fallback to LocalStorage if available
     try {
-        const cloudData = await loadFromFirebaseCloud();
-        if (cloudData && cloudData.summary) {
-            summaryData = cloudData.summary;
-            allOrdersStore = cloudData.orders || [];
-            saveSemestaToDB(summaryData, allOrdersStore);
+        const savedSummary = localStorage.getItem('semesta_summary');
+        const savedOrders = localStorage.getItem('semesta_orders_sample');
+        if (savedSummary) {
+            summaryData = JSON.parse(savedSummary);
+            if (savedOrders) {
+                allOrdersStore = JSON.parse(savedOrders);
+            }
             renderSummaryUI(summaryData);
             currentPage = 1;
             loadOrdersData();
             return;
         }
-    } catch (err) {
-        console.warn('Firebase Cloud load error:', err);
-    }
+    } catch (e) {}
 
-    // 3. Fallback to LocalStorage / Server API
-    try {
-        const savedSummary = localStorage.getItem('semesta_summary');
-        if (savedSummary) {
-            summaryData = JSON.parse(savedSummary);
-            renderSummaryUI(summaryData);
-        } else {
-            await loadSummaryData();
-        }
-    } catch (e) {
-        await loadSummaryData();
-    }
-
+    // If no local data exists, show clean initial state
+    renderSummaryUI({
+        max_date: 'Belum Ada Data',
+        total_order_semesta: 0,
+        total_ps: 0,
+        ps_percentage: 0,
+        total_ps_last_month: 0,
+        type_summary: [],
+        segment_summary: [],
+        daily_trend: []
+    });
     loadOrdersData();
 }
 
@@ -732,19 +728,10 @@ function openOrderDetailModal(ord) {
     }
 }
 
-// Load Summary JSON (Server API or Memory)
+// Load Summary JSON
 async function loadSummaryData() {
     if (summaryData) {
         renderSummaryUI(summaryData);
-        return;
-    }
-    try {
-        const res = await fetch('/api/summary');
-        if (!res.ok) throw new Error('Failed to fetch summary');
-        summaryData = await res.json();
-        renderSummaryUI(summaryData);
-    } catch (err) {
-        console.log('No server summary found, using client state.');
     }
 }
 
