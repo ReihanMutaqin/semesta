@@ -1277,6 +1277,7 @@ function exportPPTReport() {
 
     // Telkom Corporate Color Constants
     const TELKOM_RED = 'E00000';
+    const TELKOM_GREEN = '00A859';   // Warna hijau IndiHome / Telkom Green
     const DARK_NAVY = '0F172A';
     const CARD_BG = 'F8FAFC';
     const CARD_BORDER = 'E2E8F0';

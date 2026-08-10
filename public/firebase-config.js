@@ -1,5 +1,5 @@
 // Firebase Web SDK Configuration for Data Semesta
-const firebaseConfig = window.FIREBASE_CONFIG || {
+var firebaseConfig = window.FIREBASE_CONFIG || {
   apiKey: "AIzaSyA7FqfAqXaQl8c-Fbp2RACwa0XqfaGCGJM",
   authDomain: "data-semesta.firebaseapp.com",
   databaseURL: "https://data-semesta-default-rtdb.asia-southeast1.firebasedatabase.app",
