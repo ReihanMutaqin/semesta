@@ -246,6 +246,8 @@ async function handleClientFileUpload(file) {
 function processRawExcelRows(rows) {
     let maxDateMs = 0;
     let maxDateStr = 'Belum Ada Data';
+    let minDateMs = Number.MAX_SAFE_INTEGER;
+    let minDateStr = 'Belum Ada Data';
 
     const processedOrders = rows.map((r) => {
         const dateCreated = parseExcelDate(r['Date Created']);
@@ -262,6 +264,10 @@ function processRawExcelRows(rows) {
         if (statusDate && statusDate.getTime() > maxDateMs) {
             maxDateMs = statusDate.getTime();
             maxDateStr = formatDateStr(statusDate);
+        }
+        if (dateCreated && dateCreated.getTime() < minDateMs) {
+            minDateMs = dateCreated.getTime();
+            minDateStr = formatDateStr(dateCreated);
         }
 
         const rawType = (r['CRM Order Type'] || 'UNSPECIFIED').toString().trim().toUpperCase();
@@ -422,6 +428,7 @@ function processRawExcelRows(rows) {
 
     const summary = {
         max_date: maxDateStr,
+        min_date: minDateMs < Number.MAX_SAFE_INTEGER ? minDateStr : maxDateStr,
         one_month_ago: formatDateStr(new Date(oneMonthAgoMs)),
         total_order_semesta: totalOrder,
         total_ps: totalPs,
@@ -1048,25 +1055,25 @@ function exportPPTReport() {
     pptx.defineLayout({ name: 'TELKOM_16_9', width: 13.333, height: 7.5 });
     pptx.layout = 'TELKOM_16_9';
 
-    // Dynamic Date Range Calculation from Active Data
+    // Dynamic Date Range - Use summaryData directly (already scans Date Created + Status Date)
+    function formatDateDot(dateStr) {
+        // Convert "YYYY-MM-DD HH:MM:SS" to "DD.MM.YYYY"
+        if (!dateStr || dateStr === '-' || dateStr === 'Belum Ada Data') return null;
+        const parts = dateStr.substring(0, 10).split('-');
+        if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        return null;
+    }
+
     let minDateStr = "01.01.2026";
     let maxDateStr = "10.08.2026";
-    if (allOrdersStore && allOrdersStore.length > 0) {
-        const createdTimes = allOrdersStore.map(o => o.date_created_time).filter(t => t > 0);
-        if (createdTimes.length > 0) {
-            const minTime = Math.min(...createdTimes);
-            const maxTime = Math.max(...createdTimes);
-            const dMin = new Date(minTime);
-            const dMax = new Date(maxTime);
-            minDateStr = `${String(dMin.getDate()).padStart(2, '0')}.${String(dMin.getMonth() + 1).padStart(2, '0')}.${dMin.getFullYear()}`;
-            maxDateStr = `${String(dMax.getDate()).padStart(2, '0')}.${String(dMax.getMonth() + 1).padStart(2, '0')}.${dMax.getFullYear()}`;
-        }
-    } else if (summaryData && summaryData.max_date && summaryData.max_date !== 'Belum Ada Data') {
-        const dParts = summaryData.max_date.substring(0, 10).split('-');
-        if (dParts.length === 3) {
-            maxDateStr = `${dParts[2]}.${dParts[1]}.${dParts[0]}`;
-        }
+
+    if (summaryData) {
+        const mx = formatDateDot(summaryData.max_date);
+        const mn = formatDateDot(summaryData.min_date);
+        if (mx) maxDateStr = mx;
+        if (mn) minDateStr = mn;
     }
+
     const dateRangeLabel = `${minDateStr} - ${maxDateStr}`;
 
     // Telkom Corporate Color Constants
