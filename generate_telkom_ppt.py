@@ -25,7 +25,7 @@ def create_telkom_presentation():
     PURPLE_ACC = RGBColor(168, 85, 247)       # #A855F7
     WHITE = RGBColor(255, 255, 255)
 
-    def add_header(slide, title_text, category_text="LAPORAN ANALISIS DATA SEMESTA"):
+    def add_header(slide, title_text, category_text="LAPORAN ANALISIS DATA SEMESTA (01.01.2026 - 10.08.2026)"):
         # Header banner shape
         banner = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0), Inches(0), Inches(13.333), Inches(1.1))
         banner.fill.solid()
@@ -48,7 +48,7 @@ def create_telkom_presentation():
         p.font.color.rgb = TELKOM_RED
 
         # Title Text
-        txBox2 = slide.shapes.add_textbox(Inches(0.5), Inches(0.38), Inches(11), Inches(0.6))
+        txBox2 = slide.shapes.add_textbox(Inches(0.5), Inches(0.38), Inches(10.5), Inches(0.6))
         tf2 = txBox2.text_frame
         p2 = tf2.paragraphs[0]
         p2.text = title_text
@@ -73,7 +73,7 @@ def create_telkom_presentation():
         txBox = slide.shapes.add_textbox(Inches(0.5), Inches(7.05), Inches(12.333), Inches(0.35))
         tf = txBox.text_frame
         p = tf.paragraphs[0]
-        p.text = "Telkom Operations & Support System • Data Semesta Analysis • Mas Faqih & Executive Report"
+        p.text = "Telkom Operations & Support System • Rentang Acuan Data: 01.01.2026 - 10.08.2026 • Mas Faqih Report"
         p.font.size = Pt(9)
         p.font.color.rgb = TEXT_MUTED
 
@@ -94,7 +94,7 @@ def create_telkom_presentation():
     dec1.rotation = 180
 
     # Title & Subtitle Box
-    tbox = slide1.shapes.add_textbox(Inches(1.0), Inches(2.0), Inches(8.5), Inches(3.5))
+    tbox = slide1.shapes.add_textbox(Inches(1.0), Inches(1.8), Inches(8.5), Inches(3.8))
     tf = tbox.text_frame
     tf.word_wrap = True
 
@@ -109,19 +109,26 @@ def create_telkom_presentation():
     p1.font.size = Pt(40)
     p1.font.bold = True
     p1.font.color.rgb = WHITE
-    p1.space_before = Pt(10)
+    p1.space_before = Pt(8)
 
     p2 = tf.add_paragraph()
     p2.text = "Modoroso • PDA HSI • IndiHome"
     p2.font.size = Pt(24)
     p2.font.color.rgb = RGBColor(203, 213, 225)
-    p2.space_before = Pt(5)
+    p2.space_before = Pt(4)
 
     p3 = tf.add_paragraph()
-    p3.text = "Evaluasi Jumlah Order Semesta, Order Terlama, Rata-rata Durasi PS, & Performa 1 Bulan Kebelakang"
-    p3.font.size = Pt(12)
-    p3.font.color.rgb = TEXT_MUTED
-    p3.space_before = Pt(20)
+    p3.text = "Acuan Rentang Data: 01.01.2026 s/d 10.08.2026 (Total 88.011 Order)"
+    p3.font.size = Pt(13)
+    p3.font.bold = True
+    p3.font.color.rgb = EMERALD_GREEN
+    p3.space_before = Pt(12)
+
+    p4 = tf.add_paragraph()
+    p4.text = "Evaluasi Jumlah Order Semesta, Order Terlama, Rata-rata Durasi PS, & Performa 1 Bulan Kebelakang"
+    p4.font.size = Pt(11)
+    p4.font.color.rgb = TEXT_MUTED
+    p4.space_before = Pt(8)
 
     # Author Metadata Box
     abox = slide1.shapes.add_textbox(Inches(1.0), Inches(5.8), Inches(8.5), Inches(1.2))
@@ -133,7 +140,7 @@ def create_telkom_presentation():
     ap1.font.color.rgb = WHITE
 
     ap2 = atf.add_paragraph()
-    ap2.text = "Tanggal Laporan: 10 Agustus 2026 | Sumber Data: export.xlsx (88.011 Order)"
+    ap2.text = "Tanggal Laporan: 10 Agustus 2026 | Periode Data Terverifikasi: 01.01.2026 - 10.08.2026"
     ap2.font.size = Pt(10)
     ap2.font.color.rgb = TEXT_MUTED
 
@@ -146,7 +153,7 @@ def create_telkom_presentation():
 
     # 4 Large Metric Cards
     metrics = [
-        ("TOTAL ORDER SEMESTA", "88.011", "Order Semesta Terdaftar", "80.795 Order PS Complete (91,8%)", TELKOM_RED),
+        ("TOTAL ORDER SEMESTA (01.01.2026 - 10.08.2026)", "88.011", "Order Semesta Terdaftar", "80.795 Order PS Complete (91,8%)", TELKOM_RED),
         ("PS 1 BULAN KEBELAKANG", "5.910", "Order Selesai (30 Hari Terakhir)", "Didominasi Tipe CREATE (2.725) & MODIFY (2.109)", EMERALD_GREEN),
         ("RATA-RATA DURASI PS", "0,94 Hari", "~22,5 Jam (Tipe CREATE)", "Rata-rata DISCONNECT: 0,44 Hari (10,6 Jam)", DARK_NAVY),
         ("ORDER PENDING TERLAMA", "220,9 Hari", "Order Pending Terlama (CREATE)", "Pending MODIFY: 217,9 Hari", TELKOM_RED)
@@ -175,7 +182,7 @@ def create_telkom_presentation():
 
         p = tf_card.paragraphs[0]
         p.text = m_title
-        p.font.size = Pt(11)
+        p.font.size = Pt(10.5)
         p.font.bold = True
         p.font.color.rgb = TEXT_MUTED
 
@@ -491,6 +498,7 @@ def create_telkom_presentation():
 
     # Save presentation to both paths
     paths = [
+        r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom_v3.pptx",
         r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom_v2.pptx",
         r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom.pptx"
     ]

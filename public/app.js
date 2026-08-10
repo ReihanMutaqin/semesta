@@ -1077,13 +1077,14 @@ function exportPPTReport() {
     slide1.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 13.333, h: 7.5, fill: { color: DARK_NAVY } });
     slide1.addShape(pptx.ShapeType.rightTriangle, { x: 9.5, y: 0, w: 3.833, h: 7.5, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED }, rotate: 180 });
 
-    slide1.addText("TELKOM OPERATIONS REPORT", { x: 1.0, y: 2.0, w: 8.5, h: 0.4, fontSize: 14, bold: true, color: TELKOM_RED });
-    slide1.addText("Analisis Data Semesta", { x: 1.0, y: 2.4, w: 8.5, h: 0.8, fontSize: 40, bold: true, color: WHITE });
-    slide1.addText("Modoroso • PDA HSI • IndiHome", { x: 1.0, y: 3.3, w: 8.5, h: 0.5, fontSize: 24, color: 'CBD5E1' });
-    slide1.addText("Evaluasi Jumlah Order Semesta, Order Terlama, Rata-rata Durasi PS, & Performa 1 Bulan Kebelakang", { x: 1.0, y: 4.0, w: 8.5, h: 0.6, fontSize: 12, color: TEXT_MUTED });
+    slide1.addText("TELKOM OPERATIONS REPORT", { x: 1.0, y: 1.8, w: 8.5, h: 0.4, fontSize: 14, bold: true, color: TELKOM_RED });
+    slide1.addText("Analisis Data Semesta", { x: 1.0, y: 2.2, w: 8.5, h: 0.8, fontSize: 40, bold: true, color: WHITE });
+    slide1.addText("Modoroso • PDA HSI • IndiHome", { x: 1.0, y: 3.0, w: 8.5, h: 0.5, fontSize: 24, color: 'CBD5E1' });
+    slide1.addText("Acuan Rentang Data: 01.01.2026 s/d 10.08.2026 (Total 88.011 Order)", { x: 1.0, y: 3.6, w: 8.5, h: 0.4, fontSize: 13, bold: true, color: EMERALD_GREEN });
+    slide1.addText("Evaluasi Jumlah Order Semesta, Order Terlama, Rata-rata Durasi PS, & Performa 1 Bulan Kebelakang", { x: 1.0, y: 4.1, w: 8.5, h: 0.6, fontSize: 12, color: TEXT_MUTED });
 
     slide1.addText("Disusun untuk: Mas Faqih & Management Operations", { x: 1.0, y: 5.8, w: 8.5, h: 0.3, fontSize: 11, bold: true, color: WHITE });
-    slide1.addText("Tanggal Laporan: 10 Agustus 2026 | Rentang Data: 1 Jan 2026 - 10 Ags 2026", { x: 1.0, y: 6.1, w: 8.5, h: 0.3, fontSize: 10, color: TEXT_MUTED });
+    slide1.addText("Tanggal Laporan: 10 Agustus 2026 | Periode Data Terverifikasi: 01.01.2026 - 10.08.2026", { x: 1.0, y: 6.1, w: 8.5, h: 0.3, fontSize: 10, color: TEXT_MUTED });
 
     // ==========================================
     // SLIDE 2: EXECUTIVE SUMMARY (4 METRIC CARDS)
