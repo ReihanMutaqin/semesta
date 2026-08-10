@@ -65,6 +65,14 @@ function setupEventListeners() {
         }, 300);
     });
 
+    const sortSelect = document.getElementById('filter-sort');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', () => {
+            currentPage = 1;
+            loadOrdersData();
+        });
+    }
+
     document.getElementById('filter-segment').addEventListener('change', () => {
         currentPage = 1;
         loadOrdersData();
@@ -818,6 +826,7 @@ function renderCharts(data) {
 // Load Orders Data (Works in Memory for Uploaded Files or Server API)
 async function loadOrdersData() {
     const search = (document.getElementById('filter-search').value || '').toLowerCase().trim();
+    const sort = document.getElementById('filter-sort') ? document.getElementById('filter-sort').value : 'pending_desc';
     const segment = document.getElementById('filter-segment').value;
     const crmType = document.getElementById('filter-crm-type').value;
     const status = document.getElementById('filter-status').value;
@@ -833,6 +842,26 @@ async function loadOrdersData() {
                 if (!text.includes(search)) return false;
             }
             return true;
+        });
+
+        // High-performance Client-Side Sorting
+        filtered.sort((a, b) => {
+            if (sort === 'pending_desc') {
+                const ageA = a.active_duration_days || -1;
+                const ageB = b.active_duration_days || -1;
+                return ageB - ageA;
+            } else if (sort === 'created_desc') {
+                return (b.date_created_time || 0) - (a.date_created_time || 0);
+            } else if (sort === 'ps_desc') {
+                const psA = a.ps_duration_days || -1;
+                const psB = b.ps_duration_days || -1;
+                return psB - psA;
+            } else if (sort === 'created_asc') {
+                return (a.date_created_time || 0) - (b.date_created_time || 0);
+            } else if (sort === 'sc_asc') {
+                return (a.sc_order_no || '').localeCompare(b.sc_order_no || '');
+            }
+            return 0;
         });
 
         const totalRecords = filtered.length;

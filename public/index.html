@@ -27,6 +27,11 @@
                             600: '#4f46e5',
                             900: '#1e1b4b',
                         },
+                        telkom: {
+                            red: '#E00000',
+                            dark: '#0F172A',
+                            accent: '#FF3B30'
+                        },
                         darkbg: '#0b0f19',
                         darkcard: 'rgba(17, 24, 39, 0.75)',
                         darkborder: 'rgba(255, 255, 255, 0.08)'
@@ -35,7 +40,7 @@
             }
         }
     </script>
-    <!-- Latest SheetJS v0.20.1 CDN for Full ZIP64 & Custom Excel Export Compatibility -->
+    <!-- SheetJS v0.20.1 CDN for Full ZIP64 & Custom Excel Export Compatibility -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -60,7 +65,7 @@
             </div>
             <div>
                 <h3 id="upload-modal-title" class="text-lg font-bold text-white">Membaca & Memproses Excel...</h3>
-                <p id="upload-modal-desc" class="text-xs text-slate-400 mt-1">Sistem sedang mengurai file .xlsx langsung di browser Anda tanpa batasan payload Vercel.</p>
+                <p id="upload-modal-desc" class="text-xs text-slate-400 mt-1">Sistem sedang mengurai file .xlsx secara efisien langsung di browser Anda.</p>
             </div>
             <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
                 <div id="upload-progress-bar" class="bg-gradient-to-r from-brand-500 via-indigo-500 to-emerald-400 h-2 rounded-full transition-all duration-300" style="width: 30%"></div>
@@ -459,7 +464,7 @@
                         <i data-lucide="search" class="w-5 h-5 text-brand-400"></i>
                         Eksplorasi Data Order Semesta (Klik Baris Order untuk Popup Rinci!)
                     </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Cari, filter, dan klik baris order manapun untuk membuka Popup Detail 31 Atribut Lengkap</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Cari, filter, dan urutkan order terlama / terbaru / durasi PS</p>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -469,11 +474,21 @@
                 </div>
             </div>
 
-            <!-- FILTERS CONTROLS BAR -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <!-- FILTERS & SORTING CONTROLS BAR -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                 <div class="lg:col-span-2 relative">
                     <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
                     <input type="text" id="filter-search" placeholder="Cari SC Order No, Workorder, Customer, Witel, Alamat..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
+                </div>
+
+                <div>
+                    <select id="filter-sort" class="w-full px-3 py-2.5 rounded-xl bg-slate-900/80 border border-brand-500/50 text-sm text-brand-300 font-semibold focus:outline-none focus:border-brand-500">
+                        <option value="pending_desc">⏳ Order Terlama (Pending)</option>
+                        <option value="created_desc">🆕 Order Terbaru (Date Created)</option>
+                        <option value="ps_desc">⏱️ Durasi PS Terlama</option>
+                        <option value="created_asc">📅 Order Terlama (Date Created)</option>
+                        <option value="sc_asc">🔤 SC Order No (A-Z)</option>
+                    </select>
                 </div>
 
                 <div>
