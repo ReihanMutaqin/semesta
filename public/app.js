@@ -140,7 +140,6 @@ async function initDataState() {
 // Client-Side Multi-Strategy Excel Reader (Fixes "Bad uncompressed size" on ZIP64 / Custom CRM Exports)
 function readExcelWorkbook(file, statusEl, progressBar) {
     return new Promise((resolve, reject) => {
-        // Strategy 1: BinaryString (Most Compatible with Telkom CRM / zlib ZIP64 exports)
         statusEl.textContent = 'Menggunakan engine pembaca data Excel...';
         progressBar.style.width = '40%';
 
@@ -153,7 +152,6 @@ function readExcelWorkbook(file, statusEl, progressBar) {
             } catch (err1) {
                 console.warn('Strategy 1 (binary) failed, trying Strategy 2 (array buffer)...', err1);
                 
-                // Strategy 2: ArrayBuffer fallback
                 const r2 = new FileReader();
                 r2.onload = (e2) => {
                     try {
@@ -333,7 +331,7 @@ function processRawExcelRows(rows) {
         };
     });
 
-    const oneMonthAgoMs = maxDateMs - (30 * 86400000);
+    const oneMonthAgoMs = maxDateMs > 0 ? maxDateMs - (30 * 86400000) : 0;
 
     // Calculate Summary Stats
     const totalOrder = processedOrders.length;
@@ -392,6 +390,32 @@ function processRawExcelRows(rows) {
         };
     });
 
+    // 30-Day Daily Trend Calculation
+    const dailyTrendMap = {};
+    if (maxDateMs > 0) {
+        for (let i = 29; i >= 0; i--) {
+            const dKey = formatDateStr(new Date(maxDateMs - i * 86400000)).substring(0, 10);
+            dailyTrendMap[dKey] = { date_key: dKey, total_order: 0, ps_count: 0 };
+        }
+
+        processedOrders.forEach(o => {
+            if (o.date_created) {
+                const dKey = o.date_created.substring(0, 10);
+                if (dailyTrendMap[dKey]) {
+                    dailyTrendMap[dKey].total_order++;
+                }
+            }
+            if (o.is_ps === 1 && o.status_date) {
+                const dKey = o.status_date.substring(0, 10);
+                if (dailyTrendMap[dKey]) {
+                    dailyTrendMap[dKey].ps_count++;
+                }
+            }
+        });
+    }
+
+    const dailyTrend = Object.values(dailyTrendMap);
+
     const summary = {
         max_date: maxDateStr,
         one_month_ago: formatDateStr(new Date(oneMonthAgoMs)),
@@ -401,7 +425,7 @@ function processRawExcelRows(rows) {
         total_ps_last_month: psLastMonth,
         type_summary: typeSummary,
         segment_summary: segSummary,
-        daily_trend: []
+        daily_trend: dailyTrend
     };
 
     return { summary, orders: processedOrders };
@@ -411,7 +435,6 @@ function parseExcelDate(val) {
     if (!val) return null;
     if (val instanceof Date) return val;
     if (typeof val === 'number') {
-        // Excel serial date number conversion
         const utc_days = Math.floor(val - 25569);
         const utc_value = utc_days * 86400;
         const date_info = new Date(utc_value * 1000);
