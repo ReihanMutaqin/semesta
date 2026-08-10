@@ -1328,6 +1328,127 @@ function exportPPTReport() {
         slide6.addText("✔ " + r, { x: 7.1, y: 2.3 + idx * 1.0, w: 5.1, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
     });
 
+    // ==========================================
+    // SLIDE 7: TOP 15 ORDER PENDING TERLAMA (DETAIL)
+    // ==========================================
+    let slide7 = pptx.addSlide();
+    addHeader(slide7, "Detail Top 15 Order Pending Terlama (Status Belum PS)", "RINCIAN ORDER BACKLOG PRIORITAS PENANGANAN");
+    addFooter(slide7);
+
+    // Get top 15 longest pending orders from uploaded data
+    const pendingOrders = (allOrdersStore && allOrdersStore.length > 0)
+        ? allOrdersStore
+            .filter(o => o.is_ps === 0 && o.active_duration_days !== null && o.active_duration_days > 0)
+            .sort((a, b) => b.active_duration_days - a.active_duration_days)
+            .slice(0, 15)
+        : [];
+
+    const pendingHeader7 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Segmen", "Witel", "Tgl Dibuat", "Durasi Pending"];
+    let pendingTableRows = [pendingHeader7.map(h => ({
+        text: h,
+        options: { fill: { color: DARK_NAVY }, fontSize: 9, bold: true, color: WHITE, align: 'center' }
+    }))];
+
+    if (pendingOrders.length > 0) {
+        pendingOrders.forEach((o, idx) => {
+            const bg = idx % 2 === 0 ? CARD_BG : WHITE;
+            const isVeryOld = o.active_duration_days > 180;
+            const isOld = o.active_duration_days > 90;
+            const durationColor = isVeryOld ? TELKOM_RED : (isOld ? 'D97706' : TEXT_DARK);
+            const daysStr = `${o.active_duration_days.toFixed(1)} Hari`;
+            const createdShort = o.date_created ? o.date_created.substring(0, 10) : '-';
+            const scTrunc = (o.sc_order_no || '-').substring(0, 22);
+            const custTrunc = (o.customer_name || 'N/A').substring(0, 18);
+            const witelTrunc = (o.witel || '-').substring(0, 12);
+
+            pendingTableRows.push([
+                { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
+                { text: scTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, bold: true } },
+                { text: custTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK } },
+                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_DARK, align: 'center' } },
+                { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: witelTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: createdShort, options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
+                { text: daysStr, options: { fill: { color: bg }, fontSize: 9, color: durationColor, bold: isVeryOld || isOld, align: 'center' } }
+            ]);
+        });
+    } else {
+        // Fallback static data if no upload
+        [
+            ["1", "MYIR2026010000123", "PT. PRIMA NUSA", "CREATE", "Modoroso", "JAKSEL", "2026-01-02", "220.9 Hari"],
+            ["2", "SC10-2026010000456", "CV. MAJU JAYA", "MODIFY", "PDA HSI", "JAKTIM", "2026-01-05", "217.9 Hari"],
+            ["3", "DGPS-2026010000789", "KEMENDAG", "DISCONNECT", "PDA HSI", "JAKPUS", "2026-01-10", "217.4 Hari"],
+        ].forEach(([no, sc, cust, tipe, seg, witel, tgl, dur]) => {
+            pendingTableRows.push([
+                { text: no, options: { fill: { color: CARD_BG }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
+                { text: sc, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK, bold: true } },
+                { text: cust, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK } },
+                { text: tipe, options: { fill: { color: CARD_BG }, fontSize: 8.5, color: TEXT_DARK, align: 'center' } },
+                { text: seg, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: witel, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: tgl, options: { fill: { color: CARD_BG }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
+                { text: dur, options: { fill: { color: CARD_BG }, fontSize: 9, color: TELKOM_RED, bold: true, align: 'center' } }
+            ]);
+        });
+    }
+
+    slide7.addTable(pendingTableRows, { x: 0.4, y: 1.35, w: 12.533, colW: [0.4, 2.5, 2.0, 1.1, 1.4, 1.4, 1.4, 1.8] });
+
+    // Legend
+    slide7.addShape(pptx.shapes.RECTANGLE, { x: 0.4, y: 6.5, w: 0.2, h: 0.2, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
+    slide7.addText("> 180 Hari (Kritis)", { x: 0.65, y: 6.48, w: 2.5, h: 0.25, fontSize: 9, color: TELKOM_RED, bold: true });
+    slide7.addShape(pptx.shapes.RECTANGLE, { x: 3.5, y: 6.5, w: 0.2, h: 0.2, fill: { color: 'D97706' }, line: { color: 'D97706' } });
+    slide7.addText("> 90 Hari (Perlu Perhatian)", { x: 3.75, y: 6.48, w: 3.0, h: 0.25, fontSize: 9, color: 'D97706', bold: true });
+
+    // ==========================================
+    // SLIDE 8: TOP 10 ORDER PS TERLAMA (DETAIL)
+    // ==========================================
+    let slide8 = pptx.addSlide();
+    addHeader(slide8, "Detail Top 10 Order PS Terlama & Distribusi Durasi PS", "RINCIAN DURASI PENYELESAIAN ORDER (PS COMPLETE)");
+    addFooter(slide8);
+
+    // Top 10 longest PS completed orders
+    const psOrders = (allOrdersStore && allOrdersStore.length > 0)
+        ? allOrdersStore
+            .filter(o => o.is_ps === 1 && o.ps_duration_days !== null && o.ps_duration_days > 0)
+            .sort((a, b) => b.ps_duration_days - a.ps_duration_days)
+            .slice(0, 10)
+        : [];
+
+    const psHeader8 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Segmen", "Witel", "Tgl Dibuat", "Tgl PS", "Durasi PS"];
+    let psTableRows = [psHeader8.map(h => ({
+        text: h,
+        options: { fill: { color: DARK_NAVY }, fontSize: 9, bold: true, color: WHITE, align: 'center' }
+    }))];
+
+    if (psOrders.length > 0) {
+        psOrders.forEach((o, idx) => {
+            const bg = idx % 2 === 0 ? CARD_BG : WHITE;
+            const daysStr = `${o.ps_duration_days.toFixed(1)} Hari`;
+            const createdShort = o.date_created ? o.date_created.substring(0, 10) : '-';
+            const statusShort = o.status_date ? o.status_date.substring(0, 10) : '-';
+            const scTrunc = (o.sc_order_no || '-').substring(0, 20);
+            const custTrunc = (o.customer_name || 'N/A').substring(0, 16);
+            const witelTrunc = (o.witel || '-').substring(0, 10);
+
+            psTableRows.push([
+                { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
+                { text: scTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, bold: true } },
+                { text: custTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK } },
+                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_DARK, align: 'center' } },
+                { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: witelTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: createdShort, options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
+                { text: statusShort, options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
+                { text: daysStr, options: { fill: { color: bg }, fontSize: 9, color: TELKOM_RED, bold: true, align: 'center' } }
+            ]);
+        });
+    }
+
+    if (psTableRows.length > 1) {
+        slide8.addTable(psTableRows, { x: 0.4, y: 1.35, w: 12.533, colW: [0.35, 2.2, 1.8, 1.0, 1.3, 1.2, 1.4, 1.4, 1.4] });
+    }
+
     // Save File in Browser
     pptx.writeFile({ fileName: "Laporan_Analisis_Data_Semesta_Telkom.pptx" });
 }
