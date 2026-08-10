@@ -1,14 +1,12 @@
-// Firebase Web SDK Configuration Template
-// Environment variables populate from window.FIREBASE_CONFIG or Vercel
-
+// Firebase Web SDK Configuration for Data Semesta
 const firebaseConfig = window.FIREBASE_CONFIG || {
-  apiKey: "YOUR_FIREBASE_API_KEY_HERE",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyA7FqfAqXaQl8c-Fbp2RACwa0XqfaGCGJM",
+  authDomain: "data-semesta.firebaseapp.com",
+  databaseURL: "https://data-semesta-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "data-semesta",
+  storageBucket: "data-semesta.firebasestorage.app",
+  messagingSenderId: "540118142385",
+  appId: "1:540118142385:web:31849c95c9f2af3ac78190"
 };
 
 // Initialize Firebase

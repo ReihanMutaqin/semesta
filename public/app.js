@@ -186,8 +186,71 @@ async function loadSemestaFromDB() {
     }
 }
 
-// Initial Data State Loader (Prioritizes high-speed IndexedDB cache so user never has to re-upload)
+// Firebase Realtime Database & Cloud Persistence Layer
+async function saveToFirebaseCloud(summary, orders) {
+    if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) return;
+
+    try {
+        const db = firebase.database();
+
+        // 1. ERASE / RESET previous dataset completely in Firebase Cloud
+        await db.ref('summary').remove();
+        await db.ref('orders').remove();
+
+        // 2. Upload new summary metrics
+        await db.ref('summary').set(summary);
+
+        // 3. Upload orders in chunks to avoid network payload limits
+        if (orders && orders.length > 0) {
+            const chunkSize = 2500;
+            for (let i = 0; i < orders.length; i += chunkSize) {
+                const chunk = orders.slice(i, i + chunkSize);
+                const chunkObj = {};
+                chunk.forEach((ord, idx) => {
+                    chunkObj[i + idx] = ord;
+                });
+                await db.ref('orders').update(chunkObj);
+            }
+        }
+
+        console.log('Dataset successfully erased & replaced in Firebase Cloud!');
+    } catch (e) {
+        console.warn('Firebase Cloud write info:', e.message);
+    }
+}
+
+async function loadFromFirebaseCloud() {
+    if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) return null;
+
+    try {
+        const db = firebase.database();
+        const summarySnap = await db.ref('summary').once('value');
+        const summaryVal = summarySnap.val();
+
+        if (!summaryVal) return null;
+
+        const ordersSnap = await db.ref('orders').once('value');
+        const ordersVal = ordersSnap.val();
+
+        let ordersArr = [];
+        if (ordersVal) {
+            if (Array.isArray(ordersVal)) {
+                ordersArr = ordersVal.filter(Boolean);
+            } else if (typeof ordersVal === 'object') {
+                ordersArr = Object.values(ordersVal);
+            }
+        }
+
+        return { summary: summaryVal, orders: ordersArr };
+    } catch (e) {
+        console.warn('Firebase Cloud read info:', e.message);
+        return null;
+    }
+}
+
+// Initial Data State Loader (Loads from Firebase Cloud -> IndexedDB -> LocalStorage)
 async function initDataState() {
+    // 1. Check IndexedDB local cache first (Instant load)
     try {
         const cached = await loadSemestaFromDB();
         if (cached.summary && cached.orders && cached.orders.length > 0) {
@@ -196,12 +259,42 @@ async function initDataState() {
             renderSummaryUI(summaryData);
             currentPage = 1;
             loadOrdersData();
+
+            // Background check for newer data in Firebase Cloud
+            loadFromFirebaseCloud().then(cloudData => {
+                if (cloudData && cloudData.summary) {
+                    if (cloudData.summary.max_date !== summaryData.max_date || cloudData.summary.total_order_semesta !== summaryData.total_order_semesta) {
+                        summaryData = cloudData.summary;
+                        allOrdersStore = cloudData.orders;
+                        saveSemestaToDB(summaryData, allOrdersStore);
+                        renderSummaryUI(summaryData);
+                        loadOrdersData();
+                    }
+                }
+            });
             return;
         }
     } catch (err) {
-        console.warn('DB load error, falling back to LocalStorage:', err);
+        console.warn('IndexedDB load error:', err);
     }
 
+    // 2. Fetch from Firebase Cloud if local cache empty
+    try {
+        const cloudData = await loadFromFirebaseCloud();
+        if (cloudData && cloudData.summary) {
+            summaryData = cloudData.summary;
+            allOrdersStore = cloudData.orders || [];
+            saveSemestaToDB(summaryData, allOrdersStore);
+            renderSummaryUI(summaryData);
+            currentPage = 1;
+            loadOrdersData();
+            return;
+        }
+    } catch (err) {
+        console.warn('Firebase Cloud load error:', err);
+    }
+
+    // 3. Fallback to LocalStorage / Server API
     try {
         const savedSummary = localStorage.getItem('semesta_summary');
         if (savedSummary) {
@@ -213,13 +306,6 @@ async function initDataState() {
     } catch (e) {
         await loadSummaryData();
     }
-
-    try {
-        const savedOrders = localStorage.getItem('semesta_orders_sample');
-        if (savedOrders) {
-            allOrdersStore = JSON.parse(savedOrders);
-        }
-    } catch (e) {}
 
     loadOrdersData();
 }
@@ -290,16 +376,20 @@ async function handleClientFileUpload(file) {
         summaryData = processed.summary;
         allOrdersStore = processed.orders;
 
-        // Save to High-Capacity IndexedDB (ERASES old dataset first, then saves full 88,000+ rows)
-        statusEl.textContent = 'Menyimpan data baru & membersihkan database lama...';
+        // 1. Save to High-Capacity IndexedDB (ERASES old dataset locally)
+        statusEl.textContent = 'Menyimpan data baru ke database browser...';
         await saveSemestaToDB(summaryData, allOrdersStore);
+
+        // 2. Upload to Firebase Cloud (ERASES old dataset in Firebase Cloud & replaces with new dataset)
+        statusEl.textContent = 'Mengunggah & menyinkronkan data baru ke Firebase Cloud...';
+        await saveToFirebaseCloud(summaryData, allOrdersStore);
 
         // Save to localStorage for quick summary fallback
         try {
             localStorage.setItem('semesta_summary', JSON.stringify(summaryData));
             localStorage.setItem('semesta_orders_sample', JSON.stringify(allOrdersStore.slice(0, 2000)));
         } catch (e) {
-            console.log('LocalStorage quota exceeded, data safely stored in IndexedDB.');
+            console.log('LocalStorage quota exceeded, data safely stored in Firebase & IndexedDB.');
         }
 
         progressBar.style.width = '100%';

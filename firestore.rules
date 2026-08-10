@@ -1,23 +1,15 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Summary metrics collection: Public read, Admin write
+    // Public read & write for Data Semesta Dashboard
     match /summary/{document} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
-    
-    // Orders collection: Public read, Admin write
     match /orders/{orderId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
-    
-    // Default fallback
     match /{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }
