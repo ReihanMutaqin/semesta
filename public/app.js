@@ -390,31 +390,29 @@ function processRawExcelRows(rows) {
         };
     });
 
-    // 30-Day Daily Trend Calculation
-    const dailyTrendMap = {};
-    if (maxDateMs > 0) {
-        for (let i = 29; i >= 0; i--) {
-            const dKey = formatDateStr(new Date(maxDateMs - i * 86400000)).substring(0, 10);
-            dailyTrendMap[dKey] = { date_key: dKey, total_order: 0, ps_count: 0 };
+    // 30-Day Daily Trend Calculation (Dynamic Date Aggregation)
+    const dateCounts = {};
+    processedOrders.forEach(o => {
+        let dKey = null;
+        if (o.date_created && o.date_created !== '-') {
+            dKey = o.date_created.substring(0, 10);
+        } else if (o.status_date && o.status_date !== '-') {
+            dKey = o.status_date.substring(0, 10);
         }
-
-        processedOrders.forEach(o => {
-            if (o.date_created) {
-                const dKey = o.date_created.substring(0, 10);
-                if (dailyTrendMap[dKey]) {
-                    dailyTrendMap[dKey].total_order++;
-                }
+        if (dKey && /^\d{4}-\d{2}-\d{2}$/.test(dKey)) {
+            if (!dateCounts[dKey]) {
+                dateCounts[dKey] = { date_key: dKey, total_order: 0, ps_count: 0 };
             }
-            if (o.is_ps === 1 && o.status_date) {
-                const dKey = o.status_date.substring(0, 10);
-                if (dailyTrendMap[dKey]) {
-                    dailyTrendMap[dKey].ps_count++;
-                }
+            dateCounts[dKey].total_order++;
+            if (o.is_ps === 1) {
+                dateCounts[dKey].ps_count++;
             }
-        });
-    }
+        }
+    });
 
-    const dailyTrend = Object.values(dailyTrendMap);
+    const sortedDates = Object.keys(dateCounts).sort();
+    const last30Dates = sortedDates.slice(-30);
+    const dailyTrend = last30Dates.map(dKey => dateCounts[dKey]);
 
     const summary = {
         max_date: maxDateStr,
@@ -446,14 +444,22 @@ function parseExcelDate(val) {
         const minutes = Math.floor(total_seconds / 60) % 60;
         return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
     }
-    const d = new Date(val);
+    const str = val.toString().trim();
+    if (!str || str === '-') return null;
+    const d = new Date(str.replace(/-/g, '/'));
     if (!isNaN(d.getTime())) return d;
     return null;
 }
 
 function formatDateStr(d) {
     if (!d || isNaN(d.getTime())) return '-';
-    return d.toISOString().replace('T', ' ').substring(0, 19);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 // Open Order Detail Popup Modal
@@ -781,16 +787,18 @@ function renderCharts(data) {
                 label: 'Total Order Masuk',
                 data: trendData.map(d => d.total_order),
                 borderColor: '#818cf8',
-                backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                backgroundColor: 'rgba(129, 140, 248, 0.15)',
                 fill: true,
-                tension: 0.3
+                tension: 0.3,
+                pointRadius: 3
             }, {
                 label: 'Order PS',
                 data: trendData.map(d => d.ps_count),
                 borderColor: '#34d399',
-                backgroundColor: 'rgba(52, 211, 153, 0.1)',
+                backgroundColor: 'rgba(52, 211, 153, 0.15)',
                 fill: true,
-                tension: 0.3
+                tension: 0.3,
+                pointRadius: 3
             }]
         },
         options: {
@@ -800,7 +808,7 @@ function renderCharts(data) {
                 legend: { labels: { color: '#94a3b8' } }
             },
             scales: {
-                x: { ticks: { color: '#94a3b8', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { ticks: { color: '#94a3b8', maxTicksLimit: 12 }, grid: { color: 'rgba(255,255,255,0.05)' } },
                 y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
             }
         }
