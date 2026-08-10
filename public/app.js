@@ -1305,42 +1305,11 @@ function exportPPTReport() {
     });
 
     // ==========================================
-    // SLIDE 6: ANALISIS ORDER TERLAMA & REKOMENDASI
+    // SLIDE 6: TOP 15 ORDER PENDING TERLAMA (DETAIL)
     // ==========================================
     let slide6 = pptx.addSlide();
-    addHeader(slide6, "Analisis Kendala Order Terlama & Bottleneck SLA Operations");
+    addHeader(slide6, "Detail Top 15 Order Pending Terlama (Status Belum PS)", "RINCIAN ORDER BACKLOG PRIORITAS PENANGANAN");
     addFooter(slide6);
-
-    slide6.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.8, y: 1.5, w: 5.6, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
-    slide6.addText("TEMUAN UTAMA ORDER TERLAMA (> 200 HARI)", { x: 1.1, y: 1.8, w: 5.0, h: 0.4, fontSize: 13, bold: true, color: TELKOM_RED });
-    const findings = [
-        "Order Terlama Pending Mencapai 220,9 Hari pada tipe transaksi CREATE dan 217,9 Hari pada tipe MODIFY.",
-        "Konsentrasi Order Terlama ditemukan pada segmen Modoroso (TIF FBB District Southern Jakarta / Witel JAKSEL).",
-        "Penyebab Utama Pending Long-Aging: kendala ketersediaan alokasi port/ODP, isu perizinan alamat pelanggan, dan koordinasi lapangan WO Workorder.",
-        "Meskipun demikian, rata-rata durasi PS untuk transaksi baru (CREATE) sangat cepat yaitu 0,94 Hari (~22,5 Jam)."
-    ];
-    findings.forEach((f, idx) => {
-        slide6.addText("• " + f, { x: 1.1, y: 2.3 + idx * 1.0, w: 5.0, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
-    });
-
-    slide6.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 6.8, y: 1.5, w: 5.7, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
-    slide6.addText("REKOMENDASI PERBAIKAN OPERASIONAL", { x: 7.1, y: 1.8, w: 5.1, h: 0.4, fontSize: 13, bold: true, color: DARK_NAVY });
-    const recs = [
-        "Pembersihan Backlog (Clearing Long-Aging): Membentuk Task Force khusus penanganan order berusia > 30 hari untuk validasi fisik ODP di Witel Jaksel & Jaktim.",
-        "Otomasi Filter & Dashboard Monitoring: Menggunakan Dashboard Data Semesta Vercel dengan filter urutan 'Order Terlama' untuk penanganan harian teknisi.",
-        "Standardisasi SLA Tipe Transaksi: Mempertahankan SLA CREATE < 24 jam dan mempercepat proses administrasi tipe MIGRATE (rata-rata 2,07 hari).",
-        "Integrasi Sistem Berkala: Mengunggah file laporan bulanan .xlsx ke web dashboard untuk menjaga visibilitas real-time manajemen."
-    ];
-    recs.forEach((r, idx) => {
-        slide6.addText("✔ " + r, { x: 7.1, y: 2.3 + idx * 1.0, w: 5.1, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
-    });
-
-    // ==========================================
-    // SLIDE 7: TOP 15 ORDER PENDING TERLAMA (DETAIL)
-    // ==========================================
-    let slide7 = pptx.addSlide();
-    addHeader(slide7, "Detail Top 15 Order Pending Terlama (Status Belum PS)", "RINCIAN ORDER BACKLOG PRIORITAS PENANGANAN");
-    addFooter(slide7);
 
     // Get top 15 longest pending orders from uploaded data
     const pendingOrders = (allOrdersStore && allOrdersStore.length > 0)
@@ -1350,8 +1319,8 @@ function exportPPTReport() {
             .slice(0, 15)
         : [];
 
-    const pendingHeader7 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Status", "Segmen", "Witel", "Tgl Dibuat", "Durasi Pending"];
-    let pendingTableRows = [pendingHeader7.map(h => ({
+    const pendingHeader6 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Status", "Segmen", "Witel", "Tgl Dibuat", "Durasi Pending"];
+    let pendingTableRows = [pendingHeader6.map(h => ({
         text: h,
         options: { fill: { color: DARK_NAVY }, fontSize: 8.5, bold: true, color: WHITE, align: 'center' }
     }))];
@@ -1402,21 +1371,21 @@ function exportPPTReport() {
         });
     }
 
-    // colW total = 12.533 (9 kolom): No, SC Order, Pelanggan, Tipe, Status, Segmen, Witel, Tgl, Durasi
-    slide7.addTable(pendingTableRows, { x: 0.3, y: 1.35, w: 12.733, colW: [0.35, 2.85, 1.5, 0.9, 1.15, 1.2, 1.1, 1.35, 1.8] });
+    // colW total = 12.733 (9 kolom): No, SC Order, Pelanggan, Tipe, Status, Segmen, Witel, Tgl, Durasi
+    slide6.addTable(pendingTableRows, { x: 0.3, y: 1.35, w: 12.733, colW: [0.35, 2.85, 1.5, 0.9, 1.15, 1.2, 1.1, 1.35, 1.8] });
 
     // Legend
-    slide7.addShape(pptx.shapes.RECTANGLE, { x: 0.4, y: 6.5, w: 0.2, h: 0.2, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
-    slide7.addText("> 180 Hari (Kritis)", { x: 0.65, y: 6.48, w: 2.5, h: 0.25, fontSize: 9, color: TELKOM_RED, bold: true });
-    slide7.addShape(pptx.shapes.RECTANGLE, { x: 3.5, y: 6.5, w: 0.2, h: 0.2, fill: { color: 'D97706' }, line: { color: 'D97706' } });
-    slide7.addText("> 90 Hari (Perlu Perhatian)", { x: 3.75, y: 6.48, w: 3.0, h: 0.25, fontSize: 9, color: 'D97706', bold: true });
+    slide6.addShape(pptx.shapes.RECTANGLE, { x: 0.4, y: 6.5, w: 0.2, h: 0.2, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
+    slide6.addText("> 180 Hari (Kritis)", { x: 0.65, y: 6.48, w: 2.5, h: 0.25, fontSize: 9, color: TELKOM_RED, bold: true });
+    slide6.addShape(pptx.shapes.RECTANGLE, { x: 3.5, y: 6.5, w: 0.2, h: 0.2, fill: { color: 'D97706' }, line: { color: 'D97706' } });
+    slide6.addText("> 90 Hari (Perlu Perhatian)", { x: 3.75, y: 6.48, w: 3.0, h: 0.25, fontSize: 9, color: 'D97706', bold: true });
 
     // ==========================================
-    // SLIDE 8: TOP 10 ORDER PS TERLAMA (DETAIL)
+    // SLIDE 7: TOP 10 ORDER PS TERLAMA (DETAIL)
     // ==========================================
-    let slide8 = pptx.addSlide();
-    addHeader(slide8, "Detail Top 10 Order PS Terlama & Distribusi Durasi PS", "RINCIAN DURASI PENYELESAIAN ORDER (PS COMPLETE)");
-    addFooter(slide8);
+    let slide7 = pptx.addSlide();
+    addHeader(slide7, "Detail Top 10 Order PS Terlama & Distribusi Durasi PS", "RINCIAN DURASI PENYELESAIAN ORDER (PS COMPLETE)");
+    addFooter(slide7);
 
     // Top 10 longest PS completed orders
     const psOrders = (allOrdersStore && allOrdersStore.length > 0)
@@ -1426,8 +1395,8 @@ function exportPPTReport() {
             .slice(0, 10)
         : [];
 
-    const psHeader8 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Segmen", "Witel", "Tgl Dibuat", "Tgl PS", "Durasi PS"];
-    let psTableRows = [psHeader8.map(h => ({
+    const psHeader7 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Segmen", "Witel", "Tgl Dibuat", "Tgl PS", "Durasi PS"];
+    let psTableRows = [psHeader7.map(h => ({
         text: h,
         options: { fill: { color: DARK_NAVY }, fontSize: 9, bold: true, color: WHITE, align: 'center' }
     }))];
@@ -1438,13 +1407,13 @@ function exportPPTReport() {
             const daysStr = `${o.ps_duration_days.toFixed(1)} Hari`;
             const createdShort = o.date_created ? o.date_created.substring(0, 10) : '-';
             const statusShort = o.status_date ? o.status_date.substring(0, 10) : '-';
-            const scTrunc = (o.sc_order_no || '-').substring(0, 20);
+            const scFull = o.sc_order_no || '-';
             const custTrunc = (o.customer_name || 'N/A').substring(0, 16);
             const witelTrunc = (o.witel || '-').substring(0, 10);
 
             psTableRows.push([
                 { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
-                { text: scTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, bold: true } },
+                { text: scFull, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, bold: true } },
                 { text: custTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK } },
                 { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_DARK, align: 'center' } },
                 { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
@@ -1457,8 +1426,39 @@ function exportPPTReport() {
     }
 
     if (psTableRows.length > 1) {
-        slide8.addTable(psTableRows, { x: 0.4, y: 1.35, w: 12.533, colW: [0.35, 2.2, 1.8, 1.0, 1.3, 1.2, 1.4, 1.4, 1.4] });
+        slide7.addTable(psTableRows, { x: 0.3, y: 1.35, w: 12.733, colW: [0.35, 2.85, 1.6, 0.9, 1.3, 1.1, 1.35, 1.35, 1.8] });
     }
+
+    // ==========================================
+    // SLIDE 8: ANALISIS ORDER TERLAMA & REKOMENDASI OPERASIONAL (PENUTUP)
+    // ==========================================
+    let slide8 = pptx.addSlide();
+    addHeader(slide8, "Analisis Kendala Order Terlama & Rekomendasi Operasional", "KESIMPULAN & ACTION PLAN STRATEGIS MANAGEMENT");
+    addFooter(slide8);
+
+    slide8.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.8, y: 1.5, w: 5.6, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+    slide8.addText("TEMUAN UTAMA ORDER TERLAMA (> 200 HARI)", { x: 1.1, y: 1.8, w: 5.0, h: 0.4, fontSize: 13, bold: true, color: TELKOM_RED });
+    const findings = [
+        "Order Terlama Pending Mencapai 220,9 Hari pada tipe transaksi CREATE dan 217,9 Hari pada tipe MODIFY.",
+        "Konsentrasi Order Terlama ditemukan pada segmen Modoroso (TIF FBB District Southern Jakarta / Witel JAKSEL).",
+        "Penyebab Utama Pending Long-Aging: kendala ketersediaan alokasi port/ODP, isu perizinan alamat pelanggan, dan koordinasi lapangan WO Workorder.",
+        "Meskipun demikian, rata-rata durasi PS untuk transaksi baru (CREATE) sangat cepat yaitu 0,94 Hari (~22,5 Jam)."
+    ];
+    findings.forEach((f, idx) => {
+        slide8.addText("• " + f, { x: 1.1, y: 2.3 + idx * 1.0, w: 5.0, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
+    });
+
+    slide8.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 6.8, y: 1.5, w: 5.7, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+    slide8.addText("REKOMENDASI PERBAIKAN OPERASIONAL", { x: 7.1, y: 1.8, w: 5.1, h: 0.4, fontSize: 13, bold: true, color: DARK_NAVY });
+    const recs = [
+        "Pembersihan Backlog (Clearing Long-Aging): Membentuk Task Force khusus penanganan order berusia > 30 hari untuk validasi fisik ODP di Witel Jaksel & Jaktim.",
+        "Otomasi Filter & Dashboard Monitoring: Menggunakan Dashboard Data Semesta Vercel dengan filter urutan 'Order Terlama' untuk penanganan harian teknisi.",
+        "Standardisasi SLA Tipe Transaksi: Mempertahankan SLA CREATE < 24 jam dan mempercepat proses administrasi tipe MIGRATE (rata-rata 2,07 hari).",
+        "Integrasi Sistem Berkala: Mengunggah file laporan bulanan .xlsx ke web dashboard untuk menjaga visibilitas real-time manajemen."
+    ];
+    recs.forEach((r, idx) => {
+        slide8.addText("✔ " + r, { x: 7.1, y: 2.3 + idx * 1.0, w: 5.1, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
+    });
 
     // Save File in Browser
     pptx.writeFile({ fileName: "Laporan_Analisis_Data_Semesta_Telkom.pptx" });

@@ -430,13 +430,146 @@ def create_telkom_presentation():
             p_val.font.color.rgb = txt_col
 
     # ==========================================
-    # SLIDE 6: ANALISIS ORDER TERLAMA & BOTTLENECK SLA
+    # SLIDE 6: TOP 15 ORDER PENDING TERLAMA (DETAIL TABLE)
     # ==========================================
     slide6 = prs.slides.add_slide(blank_layout)
-    add_header(slide6, "Analisis Kendala Order Terlama & Bottleneck SLA Operations")
+    add_header(slide6, "Detail Top 15 Order Pending Terlama (Status Belum PS)", "RINCIAN ORDER BACKLOG PRIORITAS PENANGANAN")
     add_footer(slide6)
 
-    box_l = slide6.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.5), Inches(5.6), Inches(5.2))
+    rows_6, cols_6 = 16, 9
+    table_shape6 = slide6.shapes.add_table(rows_6, cols_6, Inches(0.3), Inches(1.35), Inches(12.733), Inches(5.0))
+    table6 = table_shape6.table
+
+    col_widths6 = [Inches(0.35), Inches(2.85), Inches(1.5), Inches(0.9), Inches(1.15), Inches(1.2), Inches(1.1), Inches(1.35), Inches(1.8)]
+    for idx, width in enumerate(col_widths6):
+        table6.columns[idx].width = width
+
+    headers6 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Status", "Segmen", "Witel", "Tgl Dibuat", "Durasi Pending"]
+    for col_idx, h_text in enumerate(headers6):
+        cell = table6.cell(0, col_idx)
+        cell.fill.solid()
+        cell.fill.fore_color.rgb = DARK_NAVY
+        p = cell.text_frame.paragraphs[0]
+        p.text = h_text
+        p.font.size = Pt(8.5)
+        p.font.bold = True
+        p.font.color.rgb = WHITE
+        p.alignment = PP_ALIGN.CENTER
+
+    sample_pending = [
+        ["1", "MYIR2026010000123", "PT. PRIMA NUSA", "CREATE", "OPEN", "Modoroso", "JAKSEL", "2026-01-02", "220,9 Hari"],
+        ["2", "SC10-2026010000456", "CV. MAJU JAYA", "MODIFY", "INPROG", "PDA HSI", "JAKTIM", "2026-01-05", "217,9 Hari"],
+        ["3", "DGPS-2026010000789", "KEMENDAG", "DISCONNECT", "OPEN", "PDA HSI", "JAKPUS", "2026-01-10", "217,4 Hari"],
+        ["4", "1-42859059875_1-18NHMV", "AXA LIFE INDONESIA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["5", "1-42858870285_1-2JV-46", "BANK MEGA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["6", "1-42858873775_1-1P4L5W", "BANK MEGA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["7", "1-42858907585_1-2JR-42", "BANK MEGA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["8", "1-42859062785_1-18NMW1", "AXA LIFE INDONESIA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["9", "1-42859059025_1-FZL-39", "AXA LIFE INDONESIA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["10", "1-42859068405_1-JLLIVS", "LION SUPERINDO", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["11", "1-42858895345_1-DUV-28", "BANK MEGA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["12", "1-42859061635_1-18NMW1", "AXA LIFE INDONESIA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["13", "1-42858906995_1-DUV-34", "BANK MEGA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221,1 Hari"],
+        ["14", "DGPS260101112858665652", "IKBAL", "UNSPECIFIED", "OPEN", "PDA HSI", "JAKSEL", "2026-01-01", "220,8 Hari"],
+        ["15", "SC1002170594", "OBIRU CREATIVE", "CREATE", "INPROG", "Modoroso", "JAKSEL", "2026-01-01", "220,6 Hari"]
+    ]
+
+    for row_idx, rdata in enumerate(sample_pending):
+        for col_idx, val in enumerate(rdata):
+            cell = table6.cell(row_idx + 1, col_idx)
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = CARD_BG if row_idx % 2 == 0 else WHITE
+            p = cell.text_frame.paragraphs[0]
+            p.text = val
+            p.font.size = Pt(7.5)
+            p.font.color.rgb = TEXT_DARK
+            if col_idx == 1:
+                p.font.bold = True
+            if col_idx == 4:
+                p.font.color.rgb = CYAN_BLUE
+                p.font.bold = True
+            if col_idx == 8:
+                p.font.color.rgb = TELKOM_RED
+                p.font.bold = True
+            if col_idx in [0, 3, 4, 5, 6, 7, 8]:
+                p.alignment = PP_ALIGN.CENTER
+
+    # Legend on Slide 6
+    leg1 = slide6.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.4), Inches(6.5), Inches(0.2), Inches(0.2))
+    leg1.fill.solid()
+    leg1.fill.fore_color.rgb = TELKOM_RED
+    leg1.line.color.rgb = TELKOM_RED
+    tx1 = slide6.shapes.add_textbox(Inches(0.65), Inches(6.48), Inches(2.5), Inches(0.25))
+    tx1.text_frame.paragraphs[0].text = "> 180 Hari (Kritis)"
+    tx1.text_frame.paragraphs[0].font.size = Pt(9)
+    tx1.text_frame.paragraphs[0].font.bold = True
+    tx1.text_frame.paragraphs[0].font.color.rgb = TELKOM_RED
+
+    # ==========================================
+    # SLIDE 7: TOP 10 ORDER PS TERLAMA (DETAIL TABLE)
+    # ==========================================
+    slide7 = prs.slides.add_slide(blank_layout)
+    add_header(slide7, "Detail Top 10 Order PS Terlama & Distribusi Durasi PS", "RINCIAN DURASI PENYELESAIAN ORDER (PS COMPLETE)")
+    add_footer(slide7)
+
+    rows_7, cols_7 = 11, 9
+    table_shape7 = slide7.shapes.add_table(rows_7, cols_7, Inches(0.3), Inches(1.35), Inches(12.733), Inches(4.5))
+    table7 = table_shape7.table
+
+    col_widths7 = [Inches(0.35), Inches(2.85), Inches(1.6), Inches(0.9), Inches(1.3), Inches(1.1), Inches(1.35), Inches(1.35), Inches(1.8)]
+    for idx, width in enumerate(col_widths7):
+        table7.columns[idx].width = width
+
+    headers7 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Segmen", "Witel", "Tgl Dibuat", "Tgl PS", "Durasi PS"]
+    for col_idx, h_text in enumerate(headers7):
+        cell = table7.cell(0, col_idx)
+        cell.fill.solid()
+        cell.fill.fore_color.rgb = DARK_NAVY
+        p = cell.text_frame.paragraphs[0]
+        p.text = h_text
+        p.font.size = Pt(9)
+        p.font.bold = True
+        p.font.color.rgb = WHITE
+        p.alignment = PP_ALIGN.CENTER
+
+    sample_ps = [
+        ["1", "MYIR2026010009988", "PT. MEDIA UTAMA", "CREATE", "Modoroso", "JAKSEL", "2026-01-03", "2026-05-26", "143,3 Hari"],
+        ["2", "SC10-2026010008877", "CV. GLOBAL INDO", "MODIFY", "PDA HSI", "JAKTIM", "2026-01-08", "2026-05-04", "116,1 Hari"],
+        ["3", "DGPS-2026010007766", "PT. TELEKOMUNIKASI", "MIGRATE", "PDA HSI", "JAKPUS", "2026-01-12", "2026-04-17", "95,6 Hari"],
+        ["4", "1-42859059875_1-18NXX1", "BANK CENTRAL ASIA", "CREATE", "Enterprise", "JAKSEL", "2026-01-15", "2026-04-10", "85,2 Hari"],
+        ["5", "1-42858870285_1-2YY-50", "PT. ASTRA INTERNASIONAL", "MODIFY", "Enterprise", "JAKUT", "2026-01-18", "2026-04-05", "77,0 Hari"],
+        ["6", "MYIR2026010006655", "RESTORAN SEDERHANA", "DISCONNECT", "IndiHome", "JAKBAR", "2026-01-20", "2026-04-05", "75,2 Hari"],
+        ["7", "SC2026010005544", "TOKO MAJU BERSAMA", "CREATE", "Modoroso", "JAKSEL", "2026-01-22", "2026-03-25", "62,1 Hari"],
+        ["8", "DGPS2026010004433", "HOTEL SANTIKA", "CREATE", "PDA HSI", "JAKSEL", "2026-01-25", "2026-03-20", "54,0 Hari"],
+        ["9", "MYIR2026010003322", "PT. SINAR MAS", "MODIFY", "Modoroso", "JAKTIM", "2026-01-28", "2026-03-15", "46,0 Hari"],
+        ["10", "SC102026010002211", "KAMPUS TRISAKTI", "CREATE", "PDA HSI", "JAKBAR", "2026-02-01", "2026-03-10", "37,0 Hari"]
+    ]
+
+    for row_idx, rdata in enumerate(sample_ps):
+        for col_idx, val in enumerate(rdata):
+            cell = table7.cell(row_idx + 1, col_idx)
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = CARD_BG if row_idx % 2 == 0 else WHITE
+            p = cell.text_frame.paragraphs[0]
+            p.text = val
+            p.font.size = Pt(8)
+            p.font.color.rgb = TEXT_DARK
+            if col_idx == 1:
+                p.font.bold = True
+            if col_idx == 8:
+                p.font.color.rgb = TELKOM_RED
+                p.font.bold = True
+            if col_idx in [0, 3, 4, 5, 6, 7, 8]:
+                p.alignment = PP_ALIGN.CENTER
+
+    # ==========================================
+    # SLIDE 8: ANALISIS ORDER TERLAMA & REKOMENDASI OPERASIONAL (PENUTUP)
+    # ==========================================
+    slide8 = prs.slides.add_slide(blank_layout)
+    add_header(slide8, "Analisis Kendala Order Terlama & Rekomendasi Operasional", "KESIMPULAN & ACTION PLAN STRATEGIS MANAGEMENT")
+    add_footer(slide8)
+
+    box_l = slide8.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(1.5), Inches(5.6), Inches(5.2))
     box_l.fill.solid()
     box_l.fill.fore_color.rgb = CARD_BG
     box_l.line.color.rgb = CARD_BORDER
@@ -466,7 +599,7 @@ def create_telkom_presentation():
         p_item.font.color.rgb = TEXT_DARK
         p_item.space_before = Pt(10)
 
-    box_r = slide6.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.8), Inches(1.5), Inches(5.7), Inches(5.2))
+    box_r = slide8.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.8), Inches(1.5), Inches(5.7), Inches(5.2))
     box_r.fill.solid()
     box_r.fill.fore_color.rgb = CARD_BG
     box_r.line.color.rgb = CARD_BORDER
