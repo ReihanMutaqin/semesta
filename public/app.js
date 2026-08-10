@@ -1671,8 +1671,8 @@ function exportPPTReport() {
         slideX.addShape(pptx.shapes.RECTANGLE, { x: 0.3, y: tblY - 0.28, w: 6.35, h: 0.28, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
         slideX.addText('TOP 8 ORDER PENDING TERLAMA', { x: 0.3, y: tblY - 0.28, w: 6.35, h: 0.28, fontSize: 8.5, bold: true, color: WHITE, align: 'center' });
 
-        const hdrPend = ["No", "SC Order No", "Pelanggan", "Tipe", "Durasi Pending"];
-        const hdrPendColW = [0.28, 1.95, 1.6, 0.82, 1.7];
+        const hdrPend = ["No", "SC Order No", "Pelanggan", "Tipe", "Status", "Durasi Pending"];
+        const hdrPendColW = [0.28, 1.8, 1.35, 0.7, 0.95, 1.27];
 
         let pendRows = [hdrPend.map(h => ({
             text: h,
@@ -1685,18 +1685,20 @@ function exportPPTReport() {
                 const isVeryOld = o.active_duration_days > 180;
                 const isOld = o.active_duration_days > 90;
                 const durColor = isVeryOld ? TELKOM_RED : (isOld ? 'D97706' : '065F46');
+                const statusStr = (o.status || '-').substring(0, 10);
                 pendRows.push([
                     { text: String(i+1), options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
                     { text: scShort(o.sc_order_no), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, bold: true, valign: 'middle' } },
-                    { text: (o.customer_name || 'N/A').substring(0, 16), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, valign: 'middle' } },
+                    { text: (o.customer_name || 'N/A').substring(0, 14), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, valign: 'middle' } },
                     { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 7, color: TELKOM_RED, bold: true, align: 'center', valign: 'middle' } },
+                    { text: statusStr, options: { fill: { color: bg }, fontSize: 6.5, color: CYAN_BLUE, bold: true, align: 'center', valign: 'middle' } },
                     { text: `${o.active_duration_days.toFixed(0)} Hari`, options: { fill: { color: bg }, fontSize: 8, color: durColor, bold: true, align: 'center', valign: 'middle' } }
                 ]);
             });
         } else {
             pendRows.push([
-                { text: 'Tidak ada order pending', options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center', colSpan: 5 } },
-                { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }
+                { text: 'Tidak ada order pending', options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center', colSpan: 6 } },
+                { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }
             ]);
         }
         slideX.addTable(pendRows, { x: 0.3, y: tblY, w: 6.35, colW: hdrPendColW, rowH: rowH });
@@ -1706,8 +1708,8 @@ function exportPPTReport() {
         slideX.addShape(pptx.shapes.RECTANGLE, { x: rxStart, y: tblY - 0.28, w: 6.2, h: 0.28, fill: { color: '065F46' }, line: { color: '065F46' } });
         slideX.addText('TOP 8 ORDER PS TERLAMA', { x: rxStart, y: tblY - 0.28, w: 6.2, h: 0.28, fontSize: 8.5, bold: true, color: WHITE, align: 'center' });
 
-        const hdrPs = ["No", "SC Order No", "Pelanggan", "Tipe", "Tgl PS", "Durasi PS"];
-        const hdrPsColW = [0.28, 1.9, 1.5, 0.7, 1.0, 0.82];
+        const hdrPs = ["No", "SC Order No", "Pelanggan", "Tipe", "Status", "Tgl PS", "Durasi PS"];
+        const hdrPsColW = [0.28, 1.75, 1.15, 0.65, 0.85, 0.82, 0.7];
 
         let psRows = [hdrPs.map(h => ({
             text: h,
@@ -1717,19 +1719,21 @@ function exportPPTReport() {
         if (topPs.length > 0) {
             topPs.forEach((o, i) => {
                 const bg = i % 2 === 0 ? CARD_BG : WHITE;
+                const statusStr = (o.status || 'COMPLETE').substring(0, 10);
                 psRows.push([
                     { text: String(i+1), options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
                     { text: scShort(o.sc_order_no), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, bold: true, valign: 'middle' } },
-                    { text: (o.customer_name || 'N/A').substring(0, 14), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, valign: 'middle' } },
+                    { text: (o.customer_name || 'N/A').substring(0, 12), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, valign: 'middle' } },
                     { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 7, color: DARK_NAVY, bold: true, align: 'center', valign: 'middle' } },
+                    { text: statusStr, options: { fill: { color: bg }, fontSize: 6.5, color: '065F46', bold: true, align: 'center', valign: 'middle' } },
                     { text: o.status_date ? o.status_date.substring(0, 10) : '-', options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
                     { text: `${o.ps_duration_days.toFixed(0)} Hari`, options: { fill: { color: bg }, fontSize: 8, color: TELKOM_RED, bold: true, align: 'center', valign: 'middle' } }
                 ]);
             });
         } else {
             psRows.push([
-                { text: 'Tidak ada data PS', options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center', colSpan: 6 } },
-                { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }
+                { text: 'Tidak ada data PS', options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center', colSpan: 7 } },
+                { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }
             ]);
         }
         slideX.addTable(psRows, { x: rxStart, y: tblY, w: 6.2, colW: hdrPsColW, rowH: rowH });
