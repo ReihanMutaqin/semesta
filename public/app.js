@@ -469,8 +469,8 @@ function processRawExcelRows(rows) {
 
         // PS = hanya COMPLETE dan COMPWORK (sesuai instruksi)
         const psStatuses = ['COMPLETE', 'COMPWORK'];
-        // Cleared = dibatalkan/ditolak/gagal/ditutup → BUKAN pending, BUKAN PS
-        const clearedStatuses = ['CANCLWORK', 'CANCEL', 'CANCELWORK', 'REJECT', 'REJECTED', 'CLOSE', 'CLOSED', 'ABORT', 'ABORTED', 'WORKFAIL', 'WAPFR', 'FAILWORK', 'FAILED'];
+        // Cleared = dibatalkan/ditolak/ditutup → BUKAN pending, BUKAN PS
+        const clearedStatuses = ['CANCLWORK', 'CANCEL', 'CANCELWORK', 'REJECT', 'REJECTED', 'CLOSE', 'CLOSED', 'ABORT', 'ABORTED'];
 
         const isPs = psStatuses.includes(statusRaw) ? 1 : 0;
         const isCleared = clearedStatuses.includes(statusRaw) ? 1 : 0;
@@ -1628,8 +1628,8 @@ function exportPPTReport() {
         addFooter(slideX);
 
         // --- Ambil data dari allOrdersStore jika tersedia ---
-        // WORKFAIL dan WAPFR juga masuk cleared (bukan pending aktif)
-        const extraCleared = ['WORKFAIL', 'WAPFR', 'FAILWORK', 'FAILED'];
+        // WORKFAIL, WAPFR, FAILED dll dimasukkan ke progres/pending (sesuai instruksi)
+        const extraCleared = [];
         const segOrders = (allOrdersStore && allOrdersStore.length > 0)
             ? allOrdersStore.filter(o => (o.segment || '').toUpperCase().includes(segmentKey.toUpperCase()))
             : [];
