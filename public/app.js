@@ -1,4 +1,4 @@
-// Data Semesta Dashboard Frontend Logic (Vercel Ready - Pure Client-Side SheetJS Excel Parser)
+// Data Semesta Dashboard Frontend Logic (Vercel Ready - Multi-Strategy SheetJS Excel Parser)
 
 let summaryData = null;
 let allOrdersStore = []; // Stores all uploaded orders in memory
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupEventListeners();
 
-    // Try loading saved data from localStorage/IndexedDB or Server API
+    // Try loading saved data from localStorage or Server API
     initDataState();
 });
 
@@ -137,7 +137,44 @@ async function initDataState() {
     loadOrdersData();
 }
 
-// Client-Side Excel File Upload & Processing (No 413 Payload Limit, No Server Bottleneck!)
+// Client-Side Multi-Strategy Excel Reader (Fixes "Bad uncompressed size" on ZIP64 / Custom CRM Exports)
+function readExcelWorkbook(file, statusEl, progressBar) {
+    return new Promise((resolve, reject) => {
+        // Strategy 1: BinaryString (Most Compatible with Telkom CRM / zlib ZIP64 exports)
+        statusEl.textContent = 'Menggunakan engine pembaca data Excel...';
+        progressBar.style.width = '40%';
+
+        const r1 = new FileReader();
+        r1.onload = (e) => {
+            try {
+                const binStr = e.target.result;
+                const workbook = XLSX.read(binStr, { type: 'binary', cellDates: false, raw: true });
+                return resolve(workbook);
+            } catch (err1) {
+                console.warn('Strategy 1 (binary) failed, trying Strategy 2 (array buffer)...', err1);
+                
+                // Strategy 2: ArrayBuffer fallback
+                const r2 = new FileReader();
+                r2.onload = (e2) => {
+                    try {
+                        const data = new Uint8Array(e2.target.result);
+                        const workbook = XLSX.read(data, { type: 'array', cellDates: false, raw: true });
+                        return resolve(workbook);
+                    } catch (err2) {
+                        console.error('All SheetJS parsing strategies failed:', err2);
+                        reject(err2);
+                    }
+                };
+                r2.onerror = reject;
+                r2.readAsArrayBuffer(file);
+            }
+        };
+        r1.onerror = reject;
+        r1.readAsBinaryString(file);
+    });
+}
+
+// Client-Side Excel File Upload & Processing
 async function handleClientFileUpload(file) {
     const modal = document.getElementById('upload-modal');
     const titleEl = document.getElementById('upload-modal-title');
@@ -148,62 +185,45 @@ async function handleClientFileUpload(file) {
     modal.classList.remove('hidden');
     titleEl.textContent = 'Membaca & Memproses Excel...';
     descEl.textContent = `Mengurai file: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)...`;
-    statusEl.textContent = 'Membaca sheet Excel di browser Anda... Mohon tunggu.';
-    progressBar.style.width = '25%';
 
     try {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                progressBar.style.width = '50%';
-                statusEl.textContent = 'Mengurai data baris & menghitung metrik SLA...';
+        const workbook = await readExcelWorkbook(file, statusEl, progressBar);
 
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const rawRows = XLSX.utils.sheet_to_json(worksheet);
+        progressBar.style.width = '70%';
+        statusEl.textContent = 'Mengekstrak baris & menghitung durasi PS...';
 
-                progressBar.style.width = '80%';
-                statusEl.textContent = `Berhasil membaca ${rawRows.length.toLocaleString()} baris. Menyusun dashboard...`;
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-                const processed = processRawExcelRows(rawRows);
-                summaryData = processed.summary;
-                allOrdersStore = processed.orders;
+        progressBar.style.width = '85%';
+        statusEl.textContent = `Berhasil membaca ${rawRows.length.toLocaleString()} baris. Menyusun dashboard...`;
 
-                // Save to localStorage for quick reload
-                try {
-                    localStorage.setItem('semesta_summary', JSON.stringify(summaryData));
-                    // Store sample of orders or full array
-                    localStorage.setItem('semesta_orders_sample', JSON.stringify(allOrdersStore.slice(0, 2000)));
-                } catch (e) {
-                    console.log('LocalStorage quota exceeded, keeping data in memory.');
-                }
+        const processed = processRawExcelRows(rawRows);
+        summaryData = processed.summary;
+        allOrdersStore = processed.orders;
 
-                progressBar.style.width = '100%';
-                titleEl.textContent = 'Upload & Analisis Berhasil! 🎉';
-                descEl.textContent = `Berhasil memproses ${rawRows.length.toLocaleString()} order dari ${file.name}`;
-                statusEl.textContent = 'Memuat ulang antarmuka dashboard...';
+        // Save to localStorage for quick reload
+        try {
+            localStorage.setItem('semesta_summary', JSON.stringify(summaryData));
+            localStorage.setItem('semesta_orders_sample', JSON.stringify(allOrdersStore.slice(0, 2000)));
+        } catch (e) {
+            console.log('LocalStorage quota exceeded, keeping data in memory.');
+        }
 
-                renderSummaryUI(summaryData);
-                currentPage = 1;
-                loadOrdersData();
+        progressBar.style.width = '100%';
+        titleEl.textContent = 'Upload & Analisis Berhasil! 🎉';
+        descEl.textContent = `Berhasil memproses ${rawRows.length.toLocaleString()} order dari ${file.name}`;
+        statusEl.textContent = 'Memuat ulang antarmuka dashboard...';
 
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                    document.getElementById('file-input-xlsx').value = '';
-                }, 1200);
+        renderSummaryUI(summaryData);
+        currentPage = 1;
+        loadOrdersData();
 
-            } catch (err) {
-                throw err;
-            }
-        };
-
-        reader.onerror = (err) => {
-            throw new Error('Gagal membaca file excel.');
-        };
-
-        reader.readAsArrayBuffer(file);
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.getElementById('file-input-xlsx').value = '';
+        }, 1200);
 
     } catch (err) {
         console.error('Client upload error:', err);
@@ -390,6 +410,19 @@ function processRawExcelRows(rows) {
 function parseExcelDate(val) {
     if (!val) return null;
     if (val instanceof Date) return val;
+    if (typeof val === 'number') {
+        // Excel serial date number conversion
+        const utc_days = Math.floor(val - 25569);
+        const utc_value = utc_days * 86400;
+        const date_info = new Date(utc_value * 1000);
+        const fractional_day = val - Math.floor(val) + 0.0000001;
+        let total_seconds = Math.floor(86400 * fractional_day);
+        const seconds = total_seconds % 60;
+        total_seconds -= seconds;
+        const hours = Math.floor(total_seconds / 3600);
+        const minutes = Math.floor(total_seconds / 60) % 60;
+        return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+    }
     const d = new Date(val);
     if (!isNaN(d.getTime())) return d;
     return null;
