@@ -1482,19 +1482,25 @@ function exportPPTReport() {
     });
 
     // ==========================================
-    // SLIDE 6: TOP 15 ORDER PENDING TERLAMA (DETAIL)
+    // SLIDE 6: TOP ORDER PENDING TERLAMA PER TIPE TRANSAKSI (DETAIL)
     // ==========================================
     let slide6 = pptx.addSlide();
-    addHeader(slide6, "Detail Top 15 Order Pending Terlama (Status Belum PS)", "RINCIAN ORDER BACKLOG PRIORITAS PENANGANAN");
+    addHeader(slide6, "Detail Top Order Pending Terlama per Tipe Transaksi (Belum PS)", "RINCIAN ORDER BACKLOG PRIORITAS PER TIPE TRANSAKSI");
     addFooter(slide6);
 
-    // Get top 15 longest pending orders from uploaded data
-    const pendingOrders = (allOrdersStore && allOrdersStore.length > 0)
-        ? allOrdersStore
-            .filter(o => o.is_ps === 0 && o.active_duration_days !== null && o.active_duration_days > 0)
-            .sort((a, b) => b.active_duration_days - a.active_duration_days)
-            .slice(0, 15)
-        : [];
+    // Get Top 3 longest pending orders for EACH CRM transaction type
+    let pendingOrders = [];
+    if (allOrdersStore && allOrdersStore.length > 0) {
+        const typesList = ['CREATE', 'MODIFY', 'DISCONNECT', 'SUSPEND', 'MIGRATE'];
+        typesList.forEach(t => {
+            const topForType = allOrdersStore
+                .filter(o => o.is_ps === 0 && o.crm_order_type === t && o.active_duration_days !== null && o.active_duration_days > 0)
+                .sort((a, b) => b.active_duration_days - a.active_duration_days)
+                .slice(0, 3);
+            pendingOrders = pendingOrders.concat(topForType);
+        });
+        pendingOrders.sort((a, b) => b.active_duration_days - a.active_duration_days);
+    }
 
     const pendingHeader6 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Status", "Segmen", "Witel", "Tgl Dibuat", "Durasi Pending"];
     let pendingTableRows = [pendingHeader6.map(h => ({
@@ -1519,7 +1525,7 @@ function exportPPTReport() {
                 { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
                 { text: scFull, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK, bold: true } },
                 { text: custTrunc, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK } },
-                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8, color: TELKOM_RED, bold: true, align: 'center' } },
                 { text: statusStr, options: { fill: { color: bg }, fontSize: 7.5, color: CYAN_BLUE, bold: true, align: 'center' } },
                 { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
                 { text: witelTrunc, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
@@ -1528,17 +1534,19 @@ function exportPPTReport() {
             ]);
         });
     } else {
-        // Fallback static data if no upload
+        // Fallback static data per type if no upload
         [
             ["1", "MYIR2026010000123", "PT. PRIMA NUSA", "CREATE", "OPEN", "Modoroso", "JAKSEL", "2026-01-02", "220.9 Hari"],
             ["2", "SC10-2026010000456", "CV. MAJU JAYA", "MODIFY", "INPROG", "PDA HSI", "JAKTIM", "2026-01-05", "217.9 Hari"],
-            ["3", "DGPS-2026010000789", "KEMENDAG", "DISCONNECT", "OPEN", "PDA HSI", "JAKPUS", "2026-01-10", "217.4 Hari"],
+            ["3", "DGPS-2026010000789", "KEMENDAG", "DISCONNECT", "OPEN", "PDA HSI", "JAKPUS", "2026-01-10", "167.0 Hari"],
+            ["4", "1-42859059875_1-18NHMV", "AXA LIFE INDONESIA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221.1 Hari"],
+            ["5", "MIG-2026010009988", "TELKOMSEL SLA", "MIGRATE", "INPROG", "PDA HSI", "JAKBAR", "2026-01-08", "217.4 Hari"]
         ].forEach(([no, sc, cust, tipe, stat, seg, witel, tgl, dur]) => {
             pendingTableRows.push([
                 { text: no, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
                 { text: sc, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK, bold: true } },
                 { text: cust, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK } },
-                { text: tipe, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
+                { text: tipe, options: { fill: { color: CARD_BG }, fontSize: 8, color: TELKOM_RED, bold: true, align: 'center' } },
                 { text: stat, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: CYAN_BLUE, bold: true, align: 'center' } },
                 { text: seg, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
                 { text: witel, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
@@ -1558,19 +1566,25 @@ function exportPPTReport() {
     slide6.addText("> 90 Hari (Perlu Perhatian)", { x: 3.75, y: 6.48, w: 3.0, h: 0.25, fontSize: 9, color: 'D97706', bold: true });
 
     // ==========================================
-    // SLIDE 7: TOP 10 ORDER PS TERLAMA (DETAIL)
+    // SLIDE 7: TOP ORDER PS TERLAMA PER TIPE TRANSAKSI (DETAIL)
     // ==========================================
     let slide7 = pptx.addSlide();
-    addHeader(slide7, "Detail Top 10 Order PS Terlama & Distribusi Durasi PS", "RINCIAN DURASI PENYELESAIAN ORDER (PS COMPLETE)");
+    addHeader(slide7, "Detail Top Order PS Terlama per Tipe Transaksi (PS Complete)", "RINCIAN DURASI PENYELESAIAN ORDER PER TIPE TRANSAKSI");
     addFooter(slide7);
 
-    // Top 10 longest PS completed orders
-    const psOrders = (allOrdersStore && allOrdersStore.length > 0)
-        ? allOrdersStore
-            .filter(o => o.is_ps === 1 && o.ps_duration_days !== null && o.ps_duration_days > 0)
-            .sort((a, b) => b.ps_duration_days - a.ps_duration_days)
-            .slice(0, 10)
-        : [];
+    // Get Top 3 longest PS completed orders for EACH CRM transaction type (CREATE, MODIFY, DISCONNECT, MIGRATE)
+    let psOrders = [];
+    if (allOrdersStore && allOrdersStore.length > 0) {
+        const psTypesList = ['CREATE', 'MODIFY', 'DISCONNECT', 'MIGRATE'];
+        psTypesList.forEach(t => {
+            const topForType = allOrdersStore
+                .filter(o => o.is_ps === 1 && o.crm_order_type === t && o.ps_duration_days !== null && o.ps_duration_days > 0)
+                .sort((a, b) => b.ps_duration_days - a.ps_duration_days)
+                .slice(0, 3);
+            psOrders = psOrders.concat(topForType);
+        });
+        psOrders.sort((a, b) => b.ps_duration_days - a.ps_duration_days);
+    }
 
     const psHeader7 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Segmen", "Witel", "Tgl Dibuat", "Tgl PS", "Durasi PS"];
     let psTableRows = [psHeader7.map(h => ({
@@ -1592,7 +1606,7 @@ function exportPPTReport() {
                 { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
                 { text: scFull, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, bold: true } },
                 { text: custTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK } },
-                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_DARK, align: 'center' } },
+                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8.5, color: DARK_NAVY, bold: true, align: 'center' } },
                 { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
                 { text: witelTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
                 { text: createdShort, options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
