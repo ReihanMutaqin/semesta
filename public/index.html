@@ -35,6 +35,8 @@
             }
         }
     </script>
+    <!-- SheetJS CDN for Client-Side 25MB+ Excel Parsing on Vercel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Lucide Icons -->
@@ -57,11 +59,11 @@
                 <i data-lucide="upload-cloud" class="w-7 h-7"></i>
             </div>
             <div>
-                <h3 id="upload-modal-title" class="text-lg font-bold text-white">Mengupload & Memproses Excel...</h3>
-                <p id="upload-modal-desc" class="text-xs text-slate-400 mt-1">Sistem sedang membaca file .xlsx baru, membuat database SQLite, dan memperbarui analitik semesta.</p>
+                <h3 id="upload-modal-title" class="text-lg font-bold text-white">Membaca & Memproses Excel...</h3>
+                <p id="upload-modal-desc" class="text-xs text-slate-400 mt-1">Sistem sedang mengurai file .xlsx langsung di browser Anda tanpa batasan payload Vercel.</p>
             </div>
             <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                <div id="upload-progress-bar" class="bg-gradient-to-r from-brand-500 via-indigo-500 to-emerald-400 h-2 rounded-full animate-pulse" style="width: 100%"></div>
+                <div id="upload-progress-bar" class="bg-gradient-to-r from-brand-500 via-indigo-500 to-emerald-400 h-2 rounded-full transition-all duration-300" style="width: 30%"></div>
             </div>
             <p id="upload-modal-status" class="text-xs font-semibold text-brand-300">Mohon tunggu beberapa detik...</p>
         </div>
@@ -92,8 +94,7 @@
 
             <!-- Modal Body Grid -->
             <div class="p-6 overflow-y-auto space-y-6 text-xs text-slate-300">
-                
-                <!-- Section 1: Information Utama & Pelanggan -->
+                <!-- Section 1: Informasi Utama & Pelanggan -->
                 <div class="space-y-3">
                     <h4 class="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
                         <i data-lucide="user" class="w-4 h-4"></i> Informasi Utama & Pelanggan
@@ -163,7 +164,7 @@
                     </div>
                 </div>
 
-                <!-- Section 3: Status & Timeline Waktu -->
+                <!-- Section 3: Status & Timeline SLA -->
                 <div class="space-y-3">
                     <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
                         <i data-lucide="clock" class="w-4 h-4"></i> Status & Durasi Waktu (SLA)
@@ -196,7 +197,7 @@
                     </div>
                 </div>
 
-                <!-- Section 4: Pengukuran, Kontrak & TIF Info -->
+                <!-- Section 4: Pengukuran & Info TIF -->
                 <div class="space-y-3">
                     <h4 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
                         <i data-lucide="shield-check" class="w-4 h-4"></i> Info Pengukuran & TIF
@@ -255,18 +256,18 @@
                             Live Data
                         </span>
                     </div>
-                    <p class="text-sm text-slate-400 mt-0.5">Analisis Terpadu Order Modoroso • PDA HSI • IndiHome (`export.xlsx`)</p>
+                    <p class="text-sm text-slate-400 mt-0.5">Analisis Terpadu Order Modoroso • PDA HSI • IndiHome</p>
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
                 <div class="px-4 py-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-xs text-slate-300 flex items-center gap-2">
                     <i data-lucide="calendar" class="w-4 h-4 text-brand-400"></i>
-                    <span>Acuan Data: <strong id="header-max-date" class="text-white">Loading...</strong></span>
+                    <span>Acuan Data: <strong id="header-max-date" class="text-white">Belum Ada Data</strong></span>
                 </div>
                 <div class="px-4 py-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-xs text-slate-300 flex items-center gap-2">
                     <i data-lucide="database" class="w-4 h-4 text-cyan-400"></i>
-                    <span>Total Record: <strong id="header-total-records" class="text-white">88.011 Order</strong></span>
+                    <span>Total Record: <strong id="header-total-records" class="text-white">0 Order</strong></span>
                 </div>
                 
                 <button id="btn-trigger-upload" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-lg shadow-emerald-600/30 flex items-center gap-2">
@@ -291,7 +292,7 @@
                     </div>
                 </div>
                 <div class="mt-4">
-                    <div id="kpi-total-orders" class="text-3xl font-extrabold text-white tracking-tight">88.011</div>
+                    <div id="kpi-total-orders" class="text-3xl font-extrabold text-white tracking-tight">0</div>
                     <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
                         <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
                         <span class="text-slate-300">Seluruh tipe transaksi & segmen</span>
@@ -308,11 +309,11 @@
                 </div>
                 <div class="mt-4">
                     <div class="flex items-baseline gap-2">
-                        <span id="kpi-total-ps" class="text-3xl font-extrabold text-white tracking-tight">80.795</span>
-                        <span id="kpi-ps-percent" class="text-sm font-bold text-emerald-400">91.8%</span>
+                        <span id="kpi-total-ps" class="text-3xl font-extrabold text-white tracking-tight">0</span>
+                        <span id="kpi-ps-percent" class="text-sm font-bold text-emerald-400">0.0%</span>
                     </div>
                     <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
-                        <div id="kpi-ps-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-1.5 rounded-full" style="width: 91.8%"></div>
+                        <div id="kpi-ps-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-1.5 rounded-full" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -325,7 +326,7 @@
                     </div>
                 </div>
                 <div class="mt-4">
-                    <div id="kpi-ps-last-month" class="text-3xl font-extrabold text-white tracking-tight">5.910</div>
+                    <div id="kpi-ps-last-month" class="text-3xl font-extrabold text-white tracking-tight">0</div>
                     <p class="text-xs text-slate-400 mt-1">30 hari terakhir dari tanggal acuan</p>
                 </div>
             </div>
@@ -340,11 +341,11 @@
                 <div class="mt-4 space-y-1">
                     <div class="flex items-center justify-between text-xs">
                         <span class="text-slate-400">Order Terlama (Pending):</span>
-                        <span class="font-bold text-rose-400">220.9 Hari</span>
+                        <span id="kpi-max-pending-days" class="font-bold text-rose-400">-</span>
                     </div>
                     <div class="flex items-center justify-between text-xs">
                         <span class="text-slate-400">Rata-rata PS CREATE:</span>
-                        <span class="font-bold text-emerald-400">0.94 Hari (~22.5 Jam)</span>
+                        <span id="kpi-avg-create-ps" class="font-bold text-emerald-400">-</span>
                     </div>
                 </div>
             </div>
@@ -356,12 +357,12 @@
                 <div>
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
                         <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-400"></i>
-                        Ringkasan Utama per Tipe Transaksi (Klik Baris untuk Filter Detail)
+                        Ringkasan Utama per Tipe Transaksi
                     </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Jawaban langsung untuk order terlama, rata-rata durasi PS, dan jumlah PS 1 bulan kebelakang. Klik baris manapun untuk memfilter data order di bawah!</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Jawaban langsung untuk order terlama, rata-rata durasi PS, dan jumlah PS 1 bulan kebelakang</p>
                 </div>
                 <span class="px-3 py-1 rounded-lg text-xs font-medium bg-brand-500/10 text-brand-300 border border-brand-500/20">
-                    Data Semesta Validated
+                    Data Semesta Ready
                 </span>
             </div>
 

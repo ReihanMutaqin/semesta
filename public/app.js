@@ -1,6 +1,7 @@
-// Data Semesta Dashboard Frontend Logic (Supports Empty Initial State & Live Upload)
+// Data Semesta Dashboard Frontend Logic (Vercel Ready - Pure Client-Side SheetJS Excel Parser)
 
 let summaryData = null;
+let allOrdersStore = []; // Stores all uploaded orders in memory
 let currentOrders = [];
 let currentPage = 1;
 let totalPages = 1;
@@ -20,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupEventListeners();
 
-    loadSummaryData();
-    loadOrdersData();
+    // Try loading saved data from localStorage/IndexedDB or Server API
+    initDataState();
 });
 
 function setupEventListeners() {
@@ -40,7 +41,7 @@ function setupEventListeners() {
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
-            handleFileUpload(file);
+            handleClientFileUpload(file);
         }
     });
 
@@ -112,6 +113,294 @@ function closeDetailModal() {
     document.getElementById('detail-modal').classList.add('hidden');
 }
 
+// Initial Data State Loader
+async function initDataState() {
+    try {
+        const savedSummary = localStorage.getItem('semesta_summary');
+        if (savedSummary) {
+            summaryData = JSON.parse(savedSummary);
+            renderSummaryUI(summaryData);
+        } else {
+            await loadSummaryData();
+        }
+    } catch (e) {
+        await loadSummaryData();
+    }
+
+    try {
+        const savedOrders = localStorage.getItem('semesta_orders_sample');
+        if (savedOrders) {
+            allOrdersStore = JSON.parse(savedOrders);
+        }
+    } catch (e) {}
+
+    loadOrdersData();
+}
+
+// Client-Side Excel File Upload & Processing (No 413 Payload Limit, No Server Bottleneck!)
+async function handleClientFileUpload(file) {
+    const modal = document.getElementById('upload-modal');
+    const titleEl = document.getElementById('upload-modal-title');
+    const descEl = document.getElementById('upload-modal-desc');
+    const statusEl = document.getElementById('upload-modal-status');
+    const progressBar = document.getElementById('upload-progress-bar');
+
+    modal.classList.remove('hidden');
+    titleEl.textContent = 'Membaca & Memproses Excel...';
+    descEl.textContent = `Mengurai file: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)...`;
+    statusEl.textContent = 'Membaca sheet Excel di browser Anda... Mohon tunggu.';
+    progressBar.style.width = '25%';
+
+    try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                progressBar.style.width = '50%';
+                statusEl.textContent = 'Mengurai data baris & menghitung metrik SLA...';
+
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const rawRows = XLSX.utils.sheet_to_json(worksheet);
+
+                progressBar.style.width = '80%';
+                statusEl.textContent = `Berhasil membaca ${rawRows.length.toLocaleString()} baris. Menyusun dashboard...`;
+
+                const processed = processRawExcelRows(rawRows);
+                summaryData = processed.summary;
+                allOrdersStore = processed.orders;
+
+                // Save to localStorage for quick reload
+                try {
+                    localStorage.setItem('semesta_summary', JSON.stringify(summaryData));
+                    // Store sample of orders or full array
+                    localStorage.setItem('semesta_orders_sample', JSON.stringify(allOrdersStore.slice(0, 2000)));
+                } catch (e) {
+                    console.log('LocalStorage quota exceeded, keeping data in memory.');
+                }
+
+                progressBar.style.width = '100%';
+                titleEl.textContent = 'Upload & Analisis Berhasil! 🎉';
+                descEl.textContent = `Berhasil memproses ${rawRows.length.toLocaleString()} order dari ${file.name}`;
+                statusEl.textContent = 'Memuat ulang antarmuka dashboard...';
+
+                renderSummaryUI(summaryData);
+                currentPage = 1;
+                loadOrdersData();
+
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    document.getElementById('file-input-xlsx').value = '';
+                }, 1200);
+
+            } catch (err) {
+                throw err;
+            }
+        };
+
+        reader.onerror = (err) => {
+            throw new Error('Gagal membaca file excel.');
+        };
+
+        reader.readAsArrayBuffer(file);
+
+    } catch (err) {
+        console.error('Client upload error:', err);
+        titleEl.textContent = 'Upload Gagal!';
+        descEl.textContent = err.message || 'Terjadi kesalahan saat membaca file excel.';
+        statusEl.innerHTML = `
+            <button onclick="document.getElementById('upload-modal').classList.add('hidden')" 
+                    class="mt-3 px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs">
+                Tutup & Coba Lagi
+            </button>
+        `;
+    }
+}
+
+// Process raw JSON rows from SheetJS into Semesta Metrics & Order Objects
+function processRawExcelRows(rows) {
+    let maxDateMs = 0;
+    let maxDateStr = 'Belum Ada Data';
+
+    const processedOrders = rows.map((r) => {
+        const dateCreated = parseExcelDate(r['Date Created']);
+        const statusDate = parseExcelDate(r['Status Date']);
+        const dateModified = parseExcelDate(r['Date Modified']);
+        const schedStart = parseExcelDate(r['Sched Start']);
+        const bookingDate = parseExcelDate(r['Booking Date']);
+        const measurementDate = parseExcelDate(r['Measurement Date']);
+
+        if (dateCreated && dateCreated.getTime() > maxDateMs) {
+            maxDateMs = dateCreated.getTime();
+            maxDateStr = formatDateStr(dateCreated);
+        }
+        if (statusDate && statusDate.getTime() > maxDateMs) {
+            maxDateMs = statusDate.getTime();
+            maxDateStr = formatDateStr(statusDate);
+        }
+
+        const rawType = (r['CRM Order Type'] || 'UNSPECIFIED').toString().trim().toUpperCase();
+        let crmType = rawType;
+        if (rawType === 'NEW INSTALL') crmType = 'CREATE';
+
+        const statusRaw = (r['Status'] || 'UNKNOWN').toString().trim().toUpperCase();
+        const psStatuses = ['COMPLETE', 'COMPWORK', 'INSTCOMP', 'DEINSTCOMP', 'ACTCOMP', 'VALCOMP'];
+        const isPs = psStatuses.includes(statusRaw) ? 1 : 0;
+
+        let psDurationDays = null;
+        if (isPs === 1 && dateCreated && statusDate && statusDate >= dateCreated) {
+            psDurationDays = (statusDate.getTime() - dateCreated.getTime()) / 86400000.0;
+        }
+
+        let activeDurationDays = null;
+        if (isPs === 0 && dateCreated && maxDateMs > 0) {
+            activeDurationDays = (maxDateMs - dateCreated.getTime()) / 86400000.0;
+        }
+
+        const sc = (r['SC Order No/Track ID/CSRM No'] || '').toString();
+        const og = (r['Owner Group'] || '').toString();
+        const pname = (r['Product Name'] || '').toString();
+        const ptype = (r['Product Type'] || '').toString();
+
+        let segment = 'Enterprise / Lainnya';
+        if (sc.includes('DGPS') || sc.includes('PDA') || og.includes('PMDA')) {
+            segment = 'PDA HSI';
+        } else if (pname.includes('INDIHOME') || ptype === 'COMMON') {
+            segment = 'IndiHome';
+        } else if (og.includes('TIF FBB') || /^(MYIR|SC10|SC20|801M|802M|803M|C001|C002|A301)/.test(sc)) {
+            segment = 'Modoroso';
+        }
+
+        return {
+            sc_order_no: sc,
+            workorder: (r['Workorder'] || '').toString(),
+            oss_order_id: (r['OSS Order ID'] || '').toString(),
+            service_no: (r['Service No.'] || '').toString(),
+            customer_name: (r['Customer Name'] || 'N/A').toString(),
+            contact_number: (r['Contact Number'] || '').toString(),
+            address: (r['Address'] || '').toString(),
+            witel: (r['witel'] || '').toString(),
+            workzone: (r['Workzone'] || '').toString(),
+            region_site_id: (r['Region/Site ID'] || '').toString(),
+            product_name: pname,
+            product_type: ptype,
+            crm_order_type: crmType,
+            wo_class: (r['WO Class'] || '').toString(),
+            owner_group: og,
+            status: statusRaw,
+            segment: segment,
+            is_ps: isPs,
+            date_created: formatDateStr(dateCreated),
+            status_date: formatDateStr(statusDate),
+            date_modified: formatDateStr(dateModified),
+            sched_start: formatDateStr(schedStart),
+            booking_date: formatDateStr(bookingDate),
+            measurement_date: formatDateStr(measurementDate),
+            no_kontrak: (r['No. Kontrak(KB/KL/P8)'] || '').toString(),
+            area_tif: (r['Area TIF'] || '').toString(),
+            district_tif: (r['District TIF'] || '').toString(),
+            regional_tif: (r['Regional TIF'] || '').toString(),
+            order_id_tsel: (r['Order ID TSEL'] || '').toString(),
+            channel_id_tsel: (r['Channle ID TSEL'] || '').toString(),
+            measurement: (r['Measurement'] || '').toString(),
+            measurement_result: (r['Measurement Result'] || '').toString(),
+            description: (r['Description'] || '').toString(),
+            ps_duration_days: psDurationDays,
+            active_duration_days: activeDurationDays,
+            date_created_time: dateCreated ? dateCreated.getTime() : 0,
+            status_date_time: statusDate ? statusDate.getTime() : 0
+        };
+    });
+
+    const oneMonthAgoMs = maxDateMs - (30 * 86400000);
+
+    // Calculate Summary Stats
+    const totalOrder = processedOrders.length;
+    const totalPs = processedOrders.filter(o => o.is_ps === 1).length;
+    const psLastMonth = processedOrders.filter(o => o.is_ps === 1 && o.status_date_time >= oneMonthAgoMs).length;
+
+    // Type Summary
+    const types = ['CREATE', 'MODIFY', 'DISCONNECT', 'SUSPEND', 'MIGRATE', 'UNSPECIFIED'];
+    const typeSummary = types.map(t => {
+        const group = processedOrders.filter(o => o.crm_order_type === t);
+        const tot = group.length;
+        const ps = group.filter(o => o.is_ps === 1).length;
+        const psL30 = group.filter(o => o.is_ps === 1 && o.status_date_time >= oneMonthAgoMs).length;
+
+        const psDurations = group.filter(o => o.ps_duration_days !== null).map(o => o.ps_duration_days);
+        const avgPsDays = psDurations.length > 0 ? psDurations.reduce((a,b) => a+b, 0) / psDurations.length : null;
+        const maxPsDays = psDurations.length > 0 ? Math.max(...psDurations) : null;
+
+        const activeDurations = group.filter(o => o.active_duration_days !== null).map(o => o.active_duration_days);
+        const maxActiveDays = activeDurations.length > 0 ? Math.max(...activeDurations) : null;
+
+        return {
+            tipe_transaksi: t,
+            total_order: tot,
+            total_ps: ps,
+            avg_ps_days: avgPsDays,
+            avg_ps_hours: avgPsDays ? avgPsDays * 24.0 : null,
+            max_active_days: maxActiveDays,
+            max_ps_days: maxPsDays,
+            ps_last_month: psL30
+        };
+    });
+
+    // Segment Summary
+    const segs = ['Modoroso', 'PDA HSI', 'IndiHome', 'Enterprise / Lainnya'];
+    const segSummary = segs.map(s => {
+        const group = processedOrders.filter(o => o.segment === s);
+        const tot = group.length;
+        const ps = group.filter(o => o.is_ps === 1).length;
+        const psL30 = group.filter(o => o.is_ps === 1 && o.status_date_time >= oneMonthAgoMs).length;
+
+        const psDurations = group.filter(o => o.ps_duration_days !== null).map(o => o.ps_duration_days);
+        const avgPsDays = psDurations.length > 0 ? psDurations.reduce((a,b) => a+b, 0) / psDurations.length : null;
+
+        const activeDurations = group.filter(o => o.active_duration_days !== null).map(o => o.active_duration_days);
+        const maxActiveDays = activeDurations.length > 0 ? Math.max(...activeDurations) : null;
+
+        return {
+            segment: s,
+            total_order: tot,
+            total_ps: ps,
+            avg_ps_days: avgPsDays,
+            avg_ps_hours: avgPsDays ? avgPsDays * 24.0 : null,
+            max_active_days: maxActiveDays,
+            ps_last_month: psL30
+        };
+    });
+
+    const summary = {
+        max_date: maxDateStr,
+        one_month_ago: formatDateStr(new Date(oneMonthAgoMs)),
+        total_order_semesta: totalOrder,
+        total_ps: totalPs,
+        ps_percentage: totalOrder > 0 ? (totalPs / totalOrder) * 100.0 : 0.0,
+        total_ps_last_month: psLastMonth,
+        type_summary: typeSummary,
+        segment_summary: segSummary,
+        daily_trend: []
+    };
+
+    return { summary, orders: processedOrders };
+}
+
+function parseExcelDate(val) {
+    if (!val) return null;
+    if (val instanceof Date) return val;
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) return d;
+    return null;
+}
+
+function formatDateStr(d) {
+    if (!d || isNaN(d.getTime())) return '-';
+    return d.toISOString().replace('T', ' ').substring(0, 19);
+}
+
+// Open Order Detail Popup Modal
 function openOrderDetailModal(ord) {
     document.getElementById('modal-sc-order').textContent = ord.sc_order_no || 'N/A';
     
@@ -173,72 +462,25 @@ function openOrderDetailModal(ord) {
     }
 }
 
-async function handleFileUpload(file) {
-    const modal = document.getElementById('upload-modal');
-    const titleEl = document.getElementById('upload-modal-title');
-    const descEl = document.getElementById('upload-modal-desc');
-    const statusEl = document.getElementById('upload-modal-status');
-    const progressBar = document.getElementById('upload-progress-bar');
-
-    modal.classList.remove('hidden');
-    titleEl.textContent = 'Mengupload & Memproses Excel Baru...';
-    descEl.textContent = `Mengirim file: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)...`;
-    statusEl.textContent = 'Memproses data semesta & membangun ulang database... Mohon tunggu.';
-    progressBar.style.width = '50%';
-
-    try {
-        const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/octet-stream'
-            },
-            body: file
-        });
-
-        const result = await res.json();
-
-        if (!res.ok || result.error) {
-            throw new Error(result.error || 'Gagal mengupload file excel.');
-        }
-
-        progressBar.style.width = '100%';
-        titleEl.textContent = 'Upload & Re-index Berhasil! 🎉';
-        descEl.textContent = result.message || 'Data Semesta berhasil diperbarui!';
-        statusEl.textContent = 'Memuat ulang analitik dashboard...';
-
-        await loadSummaryData();
-        await loadOrdersData();
-
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            document.getElementById('file-input-xlsx').value = '';
-        }, 1500);
-
-    } catch (err) {
-        console.error('Upload error:', err);
-        titleEl.textContent = 'Upload Gagal!';
-        descEl.textContent = err.message || 'Terjadi kesalahan saat memproses file excel.';
-        statusEl.innerHTML = `
-            <button onclick="document.getElementById('upload-modal').classList.add('hidden')" 
-                    class="mt-3 px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs">
-                Tutup & Coba Lagi
-            </button>
-        `;
-    }
-}
-
+// Load Summary JSON (Server API or Memory)
 async function loadSummaryData() {
+    if (summaryData) {
+        renderSummaryUI(summaryData);
+        return;
+    }
     try {
         const res = await fetch('/api/summary');
         if (!res.ok) throw new Error('Failed to fetch summary');
         summaryData = await res.json();
         renderSummaryUI(summaryData);
     } catch (err) {
-        console.error('Error loading summary:', err);
+        console.log('No server summary found, using client state.');
     }
 }
 
 function renderSummaryUI(data) {
+    if (!data) return;
+
     document.getElementById('header-max-date').textContent = data.max_date || 'Belum Ada Data';
     document.getElementById('header-total-records').textContent = `${(data.total_order_semesta || 0).toLocaleString()} Order`;
 
@@ -257,7 +499,7 @@ function renderTypeSummaryTable(types) {
     const tbody = document.getElementById('type-summary-tbody');
     tbody.innerHTML = '';
 
-    if (types.length === 0) {
+    if (types.length === 0 || types.every(t => t.total_order === 0)) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="py-6 text-center text-slate-500 font-normal">
@@ -509,13 +751,44 @@ function renderCharts(data) {
     });
 }
 
-// Load Orders Data (Paginated & Filtered)
+// Load Orders Data (Works in Memory for Uploaded Files or Server API)
 async function loadOrdersData() {
-    const search = document.getElementById('filter-search').value;
+    const search = (document.getElementById('filter-search').value || '').toLowerCase().trim();
     const segment = document.getElementById('filter-segment').value;
     const crmType = document.getElementById('filter-crm-type').value;
     const status = document.getElementById('filter-status').value;
 
+    if (allOrdersStore && allOrdersStore.length > 0) {
+        // Fast client-side filtering across uploaded orders
+        let filtered = allOrdersStore.filter(o => {
+            if (segment && o.segment !== segment) return false;
+            if (crmType && o.crm_order_type !== crmType) return false;
+            if (status && o.status !== status) return false;
+            if (search) {
+                const text = `${o.sc_order_no} ${o.workorder} ${o.customer_name} ${o.service_no} ${o.address} ${o.witel} ${o.description}`.toLowerCase();
+                if (!text.includes(search)) return false;
+            }
+            return true;
+        });
+
+        const totalRecords = filtered.length;
+        totalPages = Math.max(1, Math.ceil(totalRecords / currentLimit));
+        if (currentPage > totalPages) currentPage = 1;
+
+        const offset = (currentPage - 1) * currentLimit;
+        currentOrders = filtered.slice(offset, offset + currentLimit);
+
+        renderOrdersTable({
+            page: currentPage,
+            limit: currentLimit,
+            total_records: totalRecords,
+            total_pages: totalPages,
+            orders: currentOrders
+        });
+        return;
+    }
+
+    // Server API Fallback
     const queryParams = new URLSearchParams({
         page: currentPage,
         limit: currentLimit,
@@ -532,7 +805,7 @@ async function loadOrdersData() {
         currentOrders = data.orders || [];
         renderOrdersTable(data);
     } catch (err) {
-        console.error('Error loading orders:', err);
+        renderOrdersTable({ page: 1, limit: currentLimit, total_records: 0, total_pages: 1, orders: [] });
     }
 }
 
