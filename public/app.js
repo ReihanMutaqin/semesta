@@ -1630,97 +1630,130 @@ function exportPPTReport() {
         addFooter(slideX);
 
         // --- Ambil data dari allOrdersStore jika tersedia ---
+        // WORKFAIL dan WAPFR juga masuk cleared (bukan pending aktif)
+        const extraCleared = ['WORKFAIL', 'WAPFR', 'FAILWORK', 'FAILED'];
         const segOrders = (allOrdersStore && allOrdersStore.length > 0)
             ? allOrdersStore.filter(o => (o.segment || '').toUpperCase().includes(segmentKey.toUpperCase()))
             : [];
 
-        // --- TOP 10 PENDING TERLAMA ---
+        // --- TOP 8 PENDING TERLAMA (exclude WORKFAIL, WAPFR dll) ---
         const topPending = segOrders
-            .filter(o => o.is_ps === 0 && o.active_duration_days !== null && o.active_duration_days > 0)
+            .filter(o => o.is_ps === 0 && o.active_duration_days !== null && o.active_duration_days > 0
+                && !extraCleared.includes((o.status || '').toUpperCase()))
             .sort((a, b) => b.active_duration_days - a.active_duration_days)
-            .slice(0, 10);
+            .slice(0, 8);
 
-        // --- TOP 10 PS TERLAMA ---
+        // --- TOP 8 PS TERLAMA ---
         const topPs = segOrders
             .filter(o => o.is_ps === 1 && o.ps_duration_days !== null && o.ps_duration_days > 0)
             .sort((a, b) => b.ps_duration_days - a.ps_duration_days)
-            .slice(0, 10);
+            .slice(0, 8);
 
-        // --- LABEL SEGMEN (kiri atas) ---
-        slideX.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.3, y: 1.25, w: 12.733, h: 0.45, fill: { color: headerColor }, line: { color: headerColor }, rectRadius: 0.05 });
-        slideX.addText(`SEGMEN: ${segmentLabel.toUpperCase()}`, { x: 0.5, y: 1.28, w: 12.0, h: 0.38, fontSize: 12, bold: true, color: WHITE, align: 'left' });
+        // --- LABEL SEGMEN BAR ---
+        slideX.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 1.15, w: 13.333, h: 0.45, fill: { color: headerColor }, line: { color: headerColor } });
+        slideX.addText(`SEGMEN: ${segmentLabel.toUpperCase()}`, { x: 0.4, y: 1.17, w: 12.5, h: 0.38, fontSize: 12, bold: true, color: WHITE, align: 'left' });
 
-        // --- TABEL KIRI: TOP 10 PENDING ---
-        slideX.addText('🔴 TOP 10 Order PENDING Terlama (Belum PS)', { x: 0.3, y: 1.82, w: 6.2, h: 0.3, fontSize: 10, bold: true, color: TELKOM_RED });
-        const hdrPend = ["No", "SC Order No", "Pelanggan", "Tipe", "Status", "Durasi Pending"];
-        const hdrPendColW = [0.3, 2.2, 1.65, 0.8, 0.85, 1.1];
+        // ─── STATS RINGKASAN (baris setelah header) ───
+        const totalSeg = segOrders.length;
+        const totalPendSeg = segOrders
+            .filter(o => o.is_ps === 0 && o.active_duration_days !== null && !extraCleared.includes((o.status || '').toUpperCase())).length;
+        const totalPsSeg = segOrders.filter(o => o.is_ps === 1).length;
+        const maxPendDur = topPending.length > 0 ? `${topPending[0].active_duration_days.toFixed(0)} Hr` : '-';
+        const avgPsDays = totalPsSeg > 0
+            ? (segOrders.filter(o => o.is_ps === 1 && o.ps_duration_days !== null).reduce((a, o) => a + o.ps_duration_days, 0) / totalPsSeg).toFixed(1)
+            : '-';
+
+        // 4 stat cards di baris atas (setelah segmen bar)
+        const statCards = [
+            ['Total Order', totalSeg.toLocaleString(), TELKOM_RED],
+            ['Total Pending', totalPendSeg.toLocaleString(), 'B45309'],
+            ['Total PS', totalPsSeg.toLocaleString(), '065F46'],
+            ['Pending Terlama', maxPendDur, '1D4ED8'],
+        ];
+        statCards.forEach(([lbl, val, col], idx) => {
+            const sx = 0.3 + idx * 3.2;
+            slideX.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: sx, y: 1.7, w: 3.0, h: 0.55, fill: { color: col }, line: { color: col }, rectRadius: 0.06 });
+            slideX.addText(lbl, { x: sx + 0.1, y: 1.7, w: 2.8, h: 0.27, fontSize: 8, bold: false, color: 'FFFFFF', align: 'center' });
+            slideX.addText(String(val), { x: sx + 0.1, y: 1.96, w: 2.8, h: 0.28, fontSize: 11, bold: true, color: 'FFFFFF', align: 'center' });
+        });
+
+        // ─── Helper untuk truncate SC Order No ───
+        function scShort(sc) {
+            const s = (sc || '-').trim();
+            return s.length > 20 ? s.substring(0, 19) + '…' : s;
+        }
+
+        // ─── TABEL KIRI: TOP 8 PENDING ───
+        const tblY = 2.38;
+        const tblH = 3.68; // 8 rows * ~0.46 per row
+        slideX.addShape(pptx.shapes.RECTANGLE, { x: 0.3, y: tblY - 0.28, w: 6.35, h: 0.28, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
+        slideX.addText('TOP 8 ORDER PENDING TERLAMA', { x: 0.3, y: tblY - 0.28, w: 6.35, h: 0.28, fontSize: 8, bold: true, color: WHITE, align: 'center' });
+
+        const hdrPend = ["No", "SC Order No", "Pelanggan", "Tipe", "Durasi Pending"];
+        // No=0.28, SC=1.95, Pelanggan=1.6, Tipe=0.82, Durasi=1.7  → total=6.35
+        const hdrPendColW = [0.28, 1.95, 1.6, 0.82, 1.7];
+        const rowH = 0.38;
+
         let pendRows = [hdrPend.map(h => ({
             text: h,
-            options: { fill: { color: DARK_NAVY }, fontSize: 7.5, bold: true, color: WHITE, align: 'center' }
+            options: { fill: { color: DARK_NAVY }, fontSize: 7.5, bold: true, color: WHITE, align: 'center', valign: 'middle' }
         }))];
+
         if (topPending.length > 0) {
             topPending.forEach((o, i) => {
                 const bg = i % 2 === 0 ? CARD_BG : WHITE;
-                const dur = o.active_duration_days > 180 ? TELKOM_RED : (o.active_duration_days > 90 ? 'D97706' : TEXT_DARK);
+                const isVeryOld = o.active_duration_days > 180;
+                const isOld = o.active_duration_days > 90;
+                const durColor = isVeryOld ? TELKOM_RED : (isOld ? 'D97706' : '065F46');
                 pendRows.push([
-                    { text: String(i+1), options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center' } },
-                    { text: (o.sc_order_no || '-'), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, bold: true } },
-                    { text: (o.customer_name || '-').substring(0, 15), options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK } },
-                    { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 7, color: TELKOM_RED, bold: true, align: 'center' } },
-                    { text: o.status || '-', options: { fill: { color: bg }, fontSize: 7, color: CYAN_BLUE, bold: true, align: 'center' } },
-                    { text: `${o.active_duration_days.toFixed(1)} Hari`, options: { fill: { color: bg }, fontSize: 7.5, color: dur, bold: true, align: 'center' } }
+                    { text: String(i+1), options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                    { text: scShort(o.sc_order_no), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, bold: true, valign: 'middle' } },
+                    { text: (o.customer_name || 'N/A').substring(0, 16), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, valign: 'middle' } },
+                    { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 7, color: TELKOM_RED, bold: true, align: 'center', valign: 'middle' } },
+                    { text: `${o.active_duration_days.toFixed(0)} Hari`, options: { fill: { color: bg }, fontSize: 8, color: durColor, bold: true, align: 'center', valign: 'middle' } }
                 ]);
             });
         } else {
             pendRows.push([
-                { text: '-', options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center', colSpan: 6 } },
-                { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }
+                { text: 'Tidak ada order pending', options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center', colSpan: 5 } },
+                { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }
             ]);
         }
-        slideX.addTable(pendRows, { x: 0.3, y: 2.16, w: 6.2, colW: hdrPendColW });
+        slideX.addTable(pendRows, { x: 0.3, y: tblY, w: 6.35, colW: hdrPendColW, rowH: rowH });
 
-        // --- TABEL KANAN: TOP 10 PS TERLAMA ---
-        slideX.addText('🟢 TOP 10 Order PS Terlama (PS Complete)', { x: 6.75, y: 1.82, w: 6.2, h: 0.3, fontSize: 10, bold: true, color: '1a8c4e' });
+        // ─── TABEL KANAN: TOP 8 PS TERLAMA ───
+        const rxStart = 6.85;
+        slideX.addShape(pptx.shapes.RECTANGLE, { x: rxStart, y: tblY - 0.28, w: 6.2, h: 0.28, fill: { color: '065F46' }, line: { color: '065F46' } });
+        slideX.addText('TOP 8 ORDER PS TERLAMA', { x: rxStart, y: tblY - 0.28, w: 6.2, h: 0.28, fontSize: 8, bold: true, color: WHITE, align: 'center' });
+
         const hdrPs = ["No", "SC Order No", "Pelanggan", "Tipe", "Tgl PS", "Durasi PS"];
-        const hdrPsColW = [0.3, 2.2, 1.65, 0.8, 1.0, 1.1];
+        // 0.28+1.9+1.5+0.7+1.0+0.82 = 6.2
+        const hdrPsColW = [0.28, 1.9, 1.5, 0.7, 1.0, 0.82];
+
         let psRows = [hdrPs.map(h => ({
             text: h,
-            options: { fill: { color: DARK_NAVY }, fontSize: 7.5, bold: true, color: WHITE, align: 'center' }
+            options: { fill: { color: DARK_NAVY }, fontSize: 7.5, bold: true, color: WHITE, align: 'center', valign: 'middle' }
         }))];
+
         if (topPs.length > 0) {
             topPs.forEach((o, i) => {
                 const bg = i % 2 === 0 ? CARD_BG : WHITE;
                 psRows.push([
-                    { text: String(i+1), options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center' } },
-                    { text: (o.sc_order_no || '-'), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, bold: true } },
-                    { text: (o.customer_name || '-').substring(0, 15), options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK } },
-                    { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 7, color: DARK_NAVY, bold: true, align: 'center' } },
-                    { text: o.status_date ? o.status_date.substring(0, 10) : '-', options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center' } },
-                    { text: `${o.ps_duration_days.toFixed(1)} Hari`, options: { fill: { color: bg }, fontSize: 7.5, color: TELKOM_RED, bold: true, align: 'center' } }
+                    { text: String(i+1), options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                    { text: scShort(o.sc_order_no), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, bold: true, valign: 'middle' } },
+                    { text: (o.customer_name || 'N/A').substring(0, 14), options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_DARK, valign: 'middle' } },
+                    { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 7, color: DARK_NAVY, bold: true, align: 'center', valign: 'middle' } },
+                    { text: o.status_date ? o.status_date.substring(0, 10) : '-', options: { fill: { color: bg }, fontSize: 6.5, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                    { text: `${o.ps_duration_days.toFixed(0)} Hari`, options: { fill: { color: bg }, fontSize: 8, color: TELKOM_RED, bold: true, align: 'center', valign: 'middle' } }
                 ]);
             });
         } else {
             psRows.push([
-                { text: '-', options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center', colSpan: 6 } },
+                { text: 'Tidak ada data PS', options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center', colSpan: 6 } },
                 { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }, { text: '', options: {} }
             ]);
         }
-        slideX.addTable(psRows, { x: 6.75, y: 2.16, w: 6.2, colW: hdrPsColW });
-
-        // --- STATS RINGKASAN ---
-        const totalSeg = segOrders.length;
-        const totalPendSeg = segOrders.filter(o => o.is_ps === 0 && o.active_duration_days !== null).length;
-        const totalPsSeg = segOrders.filter(o => o.is_ps === 1).length;
-        const maxPendDur = topPending.length > 0 ? topPending[0].active_duration_days.toFixed(1) : '-';
-        const avgPsDur = topPs.length > 0
-            ? (segOrders.filter(o => o.is_ps === 1 && o.ps_duration_days !== null).reduce((a, b) => a + b.ps_duration_days, 0) / Math.max(totalPsSeg, 1)).toFixed(2)
-            : '-';
-
-        const statsY = 6.28;
-        [[`Total Order`, totalSeg, 0.3], [`Total Pending`, totalPendSeg, 3.6], [`Total PS`, totalPsSeg, 6.9], [`Pending Terlama`, `${maxPendDur} Hr`, 10.0]].forEach(([lbl, val, x]) => {
-            slideX.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x, y: statsY, w: 2.8, h: 0.5, fill: { color: headerColor }, line: { color: headerColor }, rectRadius: 0.05 });
-            slideX.addText(`${lbl}: ${val}`, { x: x + 0.08, y: statsY + 0.06, w: 2.65, h: 0.38, fontSize: 10, bold: true, color: WHITE, align: 'center' });
-        });
+        slideX.addTable(psRows, { x: rxStart, y: tblY, w: 6.2, colW: hdrPsColW, rowH: rowH });
     }
 
     // SLIDE 8: MODOROSO
@@ -1733,7 +1766,6 @@ function exportPPTReport() {
     addSegmentDetailSlide('INDIHOME', 'IndiHome', TELKOM_GREEN);
 
     // SLIDE 11: ENTERPRISE / LAINNYA
-    addSegmentDetailSlide('ENTERPRISE', 'Enterprise / Lainnya', '5E6A77');
 
     // ==========================================
     // SLIDE 12: ANALISIS ORDER TERLAMA & REKOMENDASI OPERASIONAL (PENUTUP)
