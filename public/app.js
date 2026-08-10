@@ -1647,33 +1647,16 @@ function exportPPTReport() {
             .sort((a, b) => b.ps_duration_days - a.ps_duration_days)
             .slice(0, 8);
 
-        // --- LABEL SEGMEN BAR ---
+        // ─── LABEL SEGMEN BAR ───
         slideX.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 1.15, w: 13.333, h: 0.45, fill: { color: headerColor }, line: { color: headerColor } });
         slideX.addText(`SEGMEN: ${segmentLabel.toUpperCase()}`, { x: 0.4, y: 1.17, w: 12.5, h: 0.38, fontSize: 12, bold: true, color: WHITE, align: 'left' });
 
-        // ─── STATS RINGKASAN (baris setelah header) ───
+        // ─── STATS DATA CALCULATIONS ───
         const totalSeg = segOrders.length;
         const totalPendSeg = segOrders
             .filter(o => o.is_ps === 0 && o.active_duration_days !== null && !extraCleared.includes((o.status || '').toUpperCase())).length;
         const totalPsSeg = segOrders.filter(o => o.is_ps === 1).length;
         const maxPendDur = topPending.length > 0 ? `${topPending[0].active_duration_days.toFixed(0)} Hr` : '-';
-        const avgPsDays = totalPsSeg > 0
-            ? (segOrders.filter(o => o.is_ps === 1 && o.ps_duration_days !== null).reduce((a, o) => a + o.ps_duration_days, 0) / totalPsSeg).toFixed(1)
-            : '-';
-
-        // 4 stat cards di baris atas (setelah segmen bar)
-        const statCards = [
-            ['Total Order', totalSeg.toLocaleString(), TELKOM_RED],
-            ['Total Pending', totalPendSeg.toLocaleString(), 'B45309'],
-            ['Total PS', totalPsSeg.toLocaleString(), '065F46'],
-            ['Pending Terlama', maxPendDur, '1D4ED8'],
-        ];
-        statCards.forEach(([lbl, val, col], idx) => {
-            const sx = 0.3 + idx * 3.2;
-            slideX.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: sx, y: 1.7, w: 3.0, h: 0.55, fill: { color: col }, line: { color: col }, rectRadius: 0.06 });
-            slideX.addText(lbl, { x: sx + 0.1, y: 1.7, w: 2.8, h: 0.27, fontSize: 8, bold: false, color: 'FFFFFF', align: 'center' });
-            slideX.addText(String(val), { x: sx + 0.1, y: 1.96, w: 2.8, h: 0.28, fontSize: 11, bold: true, color: 'FFFFFF', align: 'center' });
-        });
 
         // ─── Helper untuk truncate SC Order No ───
         function scShort(sc) {
@@ -1681,16 +1664,15 @@ function exportPPTReport() {
             return s.length > 20 ? s.substring(0, 19) + '…' : s;
         }
 
-        // ─── TABEL KIRI: TOP 8 PENDING ───
-        const tblY = 2.38;
-        const tblH = 3.68; // 8 rows * ~0.46 per row
+        // ─── TABEL KIRI: TOP 8 PENDING (y Start = 1.95) ───
+        const tblY = 1.95;
+        const rowH = 0.38;
+
         slideX.addShape(pptx.shapes.RECTANGLE, { x: 0.3, y: tblY - 0.28, w: 6.35, h: 0.28, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
-        slideX.addText('TOP 8 ORDER PENDING TERLAMA', { x: 0.3, y: tblY - 0.28, w: 6.35, h: 0.28, fontSize: 8, bold: true, color: WHITE, align: 'center' });
+        slideX.addText('TOP 8 ORDER PENDING TERLAMA', { x: 0.3, y: tblY - 0.28, w: 6.35, h: 0.28, fontSize: 8.5, bold: true, color: WHITE, align: 'center' });
 
         const hdrPend = ["No", "SC Order No", "Pelanggan", "Tipe", "Durasi Pending"];
-        // No=0.28, SC=1.95, Pelanggan=1.6, Tipe=0.82, Durasi=1.7  → total=6.35
         const hdrPendColW = [0.28, 1.95, 1.6, 0.82, 1.7];
-        const rowH = 0.38;
 
         let pendRows = [hdrPend.map(h => ({
             text: h,
@@ -1722,10 +1704,9 @@ function exportPPTReport() {
         // ─── TABEL KANAN: TOP 8 PS TERLAMA ───
         const rxStart = 6.85;
         slideX.addShape(pptx.shapes.RECTANGLE, { x: rxStart, y: tblY - 0.28, w: 6.2, h: 0.28, fill: { color: '065F46' }, line: { color: '065F46' } });
-        slideX.addText('TOP 8 ORDER PS TERLAMA', { x: rxStart, y: tblY - 0.28, w: 6.2, h: 0.28, fontSize: 8, bold: true, color: WHITE, align: 'center' });
+        slideX.addText('TOP 8 ORDER PS TERLAMA', { x: rxStart, y: tblY - 0.28, w: 6.2, h: 0.28, fontSize: 8.5, bold: true, color: WHITE, align: 'center' });
 
         const hdrPs = ["No", "SC Order No", "Pelanggan", "Tipe", "Tgl PS", "Durasi PS"];
-        // 0.28+1.9+1.5+0.7+1.0+0.82 = 6.2
         const hdrPsColW = [0.28, 1.9, 1.5, 0.7, 1.0, 0.82];
 
         let psRows = [hdrPs.map(h => ({
@@ -1752,6 +1733,21 @@ function exportPPTReport() {
             ]);
         }
         slideX.addTable(psRows, { x: rxStart, y: tblY, w: 6.2, colW: hdrPsColW, rowH: rowH });
+
+        // ─── 4 STAT CARDS DI DIBAWAH TABEL (y = 5.75, TANPA OVERLAP) ───
+        const statY = 5.75;
+        const statCards = [
+            ['Total Order', totalSeg.toLocaleString(), TELKOM_RED],
+            ['Total Pending', totalPendSeg.toLocaleString(), 'B45309'],
+            ['Total PS', totalPsSeg.toLocaleString(), '065F46'],
+            ['Pending Terlama', maxPendDur, '1D4ED8'],
+        ];
+        statCards.forEach(([lbl, val, col], idx) => {
+            const sx = 0.3 + idx * 3.2;
+            slideX.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: sx, y: statY, w: 3.0, h: 0.72, fill: { color: col }, line: { color: col }, rectRadius: 0.08 });
+            slideX.addText(lbl, { x: sx + 0.1, y: statY + 0.08, w: 2.8, h: 0.25, fontSize: 8.5, bold: false, color: 'FFFFFF', align: 'center' });
+            slideX.addText(String(val), { x: sx + 0.1, y: statY + 0.32, w: 2.8, h: 0.32, fontSize: 13, bold: true, color: 'FFFFFF', align: 'center' });
+        });
     }
 
     // SLIDE 8: MODOROSO
@@ -1764,6 +1760,7 @@ function exportPPTReport() {
     addSegmentDetailSlide('INDIHOME', 'IndiHome', TELKOM_GREEN);
 
     // SLIDE 11: ENTERPRISE / LAINNYA
+    addSegmentDetailSlide('ENTERPRISE', 'Enterprise / Lainnya', '5E6A77');
 
     // ==========================================
     // SLIDE 12: ANALISIS ORDER TERLAMA & REKOMENDASI OPERASIONAL (PENUTUP)
