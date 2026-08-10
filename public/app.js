@@ -250,7 +250,7 @@ async function loadFromFirebaseCloud() {
 
 // Initial Data State Loader (Loads from Firebase Cloud -> IndexedDB -> LocalStorage)
 async function initDataState() {
-    // 1. Check IndexedDB local cache first (Instant load)
+    // 1. Check IndexedDB local database (Instant load, 100% offline & local)
     try {
         const cached = await loadSemestaFromDB();
         if (cached.summary && cached.orders && cached.orders.length > 0) {
@@ -259,19 +259,6 @@ async function initDataState() {
             renderSummaryUI(summaryData);
             currentPage = 1;
             loadOrdersData();
-
-            // Background check for newer data in Firebase Cloud
-            loadFromFirebaseCloud().then(cloudData => {
-                if (cloudData && cloudData.summary) {
-                    if (cloudData.summary.max_date !== summaryData.max_date || cloudData.summary.total_order_semesta !== summaryData.total_order_semesta) {
-                        summaryData = cloudData.summary;
-                        allOrdersStore = cloudData.orders;
-                        saveSemestaToDB(summaryData, allOrdersStore);
-                        renderSummaryUI(summaryData);
-                        loadOrdersData();
-                    }
-                }
-            });
             return;
         }
     } catch (err) {
@@ -383,13 +370,9 @@ async function handleClientFileUpload(fileInputParam) {
         summaryData = processed.summary;
         allOrdersStore = processed.orders;
 
-        // 1. Save to High-Capacity IndexedDB
-        statusEl.textContent = 'Menyimpan data ke database browser...';
+        // 1. Save to High-Capacity Local IndexedDB (Instant, no network lag)
+        statusEl.textContent = 'Menyimpan data ke database browser lokal...';
         await saveSemestaToDB(summaryData, allOrdersStore);
-
-        // 2. Upload to Firebase Cloud
-        statusEl.textContent = 'Mengunggah & menyinkronkan data ke Firebase Cloud...';
-        await saveToFirebaseCloud(summaryData, allOrdersStore);
 
         try {
             localStorage.setItem('semesta_summary', JSON.stringify(summaryData));
@@ -553,6 +536,15 @@ function processRawExcelRows(rows) {
     const totalPs = processedOrders.filter(o => o.is_ps === 1).length;
     const psLastMonth = processedOrders.filter(o => o.is_ps === 1 && o.status_date_time >= oneMonthAgoMs).length;
 
+    function safeMax(arr) {
+        if (!arr || arr.length === 0) return null;
+        let max = arr[0];
+        for (let i = 1; i < arr.length; i++) {
+            if (arr[i] > max) max = arr[i];
+        }
+        return max;
+    }
+
     // Type Summary
     const types = ['CREATE', 'MODIFY', 'DISCONNECT', 'SUSPEND', 'MIGRATE', 'UNSPECIFIED'];
     const typeSummary = types.map(t => {
@@ -563,10 +555,10 @@ function processRawExcelRows(rows) {
 
         const psDurations = group.filter(o => o.ps_duration_days !== null).map(o => o.ps_duration_days);
         const avgPsDays = psDurations.length > 0 ? psDurations.reduce((a,b) => a+b, 0) / psDurations.length : null;
-        const maxPsDays = psDurations.length > 0 ? Math.max(...psDurations) : null;
+        const maxPsDays = safeMax(psDurations);
 
         const activeDurations = group.filter(o => o.active_duration_days !== null).map(o => o.active_duration_days);
-        const maxActiveDays = activeDurations.length > 0 ? Math.max(...activeDurations) : null;
+        const maxActiveDays = safeMax(activeDurations);
 
         return {
             tipe_transaksi: t,
@@ -592,7 +584,7 @@ function processRawExcelRows(rows) {
         const avgPsDays = psDurations.length > 0 ? psDurations.reduce((a,b) => a+b, 0) / psDurations.length : null;
 
         const activeDurations = group.filter(o => o.active_duration_days !== null).map(o => o.active_duration_days);
-        const maxActiveDays = activeDurations.length > 0 ? Math.max(...activeDurations) : null;
+        const maxActiveDays = safeMax(activeDurations);
 
         return {
             segment: s,
