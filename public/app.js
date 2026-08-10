@@ -1773,13 +1773,33 @@ function exportPPTReport() {
     addHeader(slide8, "Analisis Kendala Order Terlama & Rekomendasi Operasional", "KESIMPULAN & ACTION PLAN STRATEGIS MANAGEMENT");
     addFooter(slide8);
 
+    // Dynamic analysis values computed directly from uploaded dataset summary
+    const typeCreate12 = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'CREATE') : null;
+    const typeModify12 = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'MODIFY') : null;
+    const typeMigrate12 = summaryData && summaryData.type_summary ? summaryData.type_summary.find(t => t.tipe_transaksi === 'MIGRATE') : null;
+
+    const maxCreateDaysStr = (typeCreate12 && typeCreate12.max_active_days) ? `${typeCreate12.max_active_days.toFixed(1)} Hari` : "220,9 Hari";
+    const maxModifyDaysStr = (typeModify12 && typeModify12.max_active_days) ? `${typeModify12.max_active_days.toFixed(1)} Hari` : "217,9 Hari";
+    const avgCreatePsStr = (typeCreate12 && typeCreate12.avg_ps_days) ? `${typeCreate12.avg_ps_days.toFixed(2)} Hari (~${(typeCreate12.avg_ps_hours || 0).toFixed(1)} Jam)` : "0,94 Hari (~22,5 Jam)";
+    const avgMigratePsStr = (typeMigrate12 && typeMigrate12.avg_ps_days) ? `${typeMigrate12.avg_ps_days.toFixed(2)} Hari` : "2,07 Hari";
+
+    let topPendingOrderInfo = "Modoroso (Witel JAKSEL)";
+    if (allOrdersStore && allOrdersStore.length > 0) {
+        const top1 = allOrdersStore
+            .filter(o => o.is_ps === 0 && o.active_duration_days !== null)
+            .sort((a, b) => b.active_duration_days - a.active_duration_days)[0];
+        if (top1) {
+            topPendingOrderInfo = `${top1.segment || 'Modoroso'} (Witel ${top1.witel || 'JAKSEL'})`;
+        }
+    }
+
     slide8.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 0.8, y: 1.5, w: 5.6, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
     slide8.addText("TEMUAN UTAMA ORDER TERLAMA (> 200 HARI)", { x: 1.1, y: 1.8, w: 5.0, h: 0.4, fontSize: 13, bold: true, color: TELKOM_RED });
     const findings = [
-        "Order Terlama Pending Mencapai 220,9 Hari pada tipe transaksi CREATE dan 217,9 Hari pada tipe MODIFY.",
-        "Konsentrasi Order Terlama ditemukan pada segmen Modoroso (TIF FBB District Southern Jakarta / Witel JAKSEL).",
+        `Order Terlama Pending Mencapai ${maxCreateDaysStr} pada tipe transaksi CREATE dan ${maxModifyDaysStr} pada tipe MODIFY.`,
+        `Konsentrasi Order Terlama ditemukan pada segmen ${topPendingOrderInfo}.`,
         "Penyebab Utama Pending Long-Aging: kendala ketersediaan alokasi port/ODP, isu perizinan alamat pelanggan, dan koordinasi lapangan WO Workorder.",
-        "Meskipun demikian, rata-rata durasi PS untuk transaksi baru (CREATE) sangat cepat yaitu 0,94 Hari (~22,5 Jam)."
+        `Meskipun demikian, rata-rata durasi PS untuk transaksi baru (CREATE) sangat cepat yaitu ${avgCreatePsStr}.`
     ];
     findings.forEach((f, idx) => {
         slide8.addText("• " + f, { x: 1.1, y: 2.3 + idx * 1.0, w: 5.0, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
@@ -1788,9 +1808,9 @@ function exportPPTReport() {
     slide8.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 6.8, y: 1.5, w: 5.7, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
     slide8.addText("REKOMENDASI PERBAIKAN OPERASIONAL", { x: 7.1, y: 1.8, w: 5.1, h: 0.4, fontSize: 13, bold: true, color: DARK_NAVY });
     const recs = [
-        "Pembersihan Backlog (Clearing Long-Aging): Membentuk Task Force khusus penanganan order berusia > 30 hari untuk validasi fisik ODP di Witel Jaksel & Jaktim.",
+        "Pembersihan Backlog (Clearing Long-Aging): Membentuk Task Force khusus penanganan order berusia > 30 hari untuk validasi fisik ODP di Witel prioritas.",
         "Otomasi Filter & Dashboard Monitoring: Menggunakan Dashboard Data Semesta Vercel dengan filter urutan 'Order Terlama' untuk penanganan harian teknisi.",
-        "Standardisasi SLA Tipe Transaksi: Mempertahankan SLA CREATE < 24 jam dan mempercepat proses administrasi tipe MIGRATE (rata-rata 2,07 hari).",
+        `Standardisasi SLA Tipe Transaksi: Mempertahankan SLA CREATE < 24 jam dan mempercepat proses administrasi tipe MIGRATE (rata-rata ${avgMigratePsStr}).`,
         "Integrasi Sistem Berkala: Mengunggah file laporan bulanan .xlsx ke web dashboard untuk menjaga visibilitas real-time manajemen."
     ];
     recs.forEach((r, idx) => {
