@@ -42,6 +42,8 @@
     </script>
     <!-- SheetJS v0.20.1 CDN for Full ZIP64 & Custom Excel Export Compatibility -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- PptxGenJS CDN for Client-Side PowerPoint (.pptx) Export -->
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Lucide Icons -->
@@ -275,6 +277,11 @@
                     <span>Total Record: <strong id="header-total-records" class="text-white">0 Order</strong></span>
                 </div>
                 
+                <button id="btn-export-ppt" class="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white text-xs font-bold transition-all shadow-lg shadow-red-600/30 flex items-center gap-2">
+                    <i data-lucide="presentation" class="w-4 h-4"></i>
+                    <span>Download PPT Presentasi</span>
+                </button>
+
                 <button id="btn-trigger-upload" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-lg shadow-emerald-600/30 flex items-center gap-2">
                     <i data-lucide="upload-cloud" class="w-4 h-4"></i>
                     <span>Upload XLSX Baru</span>

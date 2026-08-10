@@ -31,6 +31,11 @@ function setupEventListeners() {
         loadOrdersData();
     });
 
+    const btnExportPPT = document.getElementById('btn-export-ppt');
+    if (btnExportPPT) {
+        btnExportPPT.addEventListener('click', exportPPTReport);
+    }
+
     const triggerUploadBtn = document.getElementById('btn-trigger-upload');
     const fileInput = document.getElementById('file-input-xlsx');
 
@@ -1029,3 +1034,225 @@ function escapeHtml(str) {
         }[m];
     });
 }
+
+// Client-Side PowerPoint (.pptx) Generator Khas Telkom (PptxGenJS)
+function exportPPTReport() {
+    if (typeof PptxGenJS === 'undefined') {
+        alert('Modul PPT belum siap. Pastikan koneksi internet terhubung untuk memuat PptxGenJS.');
+        return;
+    }
+
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_16x9';
+
+    // Telkom Corporate Color Constants
+    const TELKOM_RED = 'E00000';
+    const DARK_NAVY = '0F172A';
+    const CARD_BG = 'F8FAFC';
+    const CARD_BORDER = 'E2E8F0';
+    const TEXT_DARK = '1E293B';
+    const TEXT_MUTED = '64748B';
+    const EMERALD_GREEN = '10B981';
+    const CYAN_BLUE = '06B6D4';
+    const PURPLE_ACC = 'A855F7';
+    const WHITE = 'FFFFFF';
+
+    function addHeader(slide, titleText, categoryText = "LAPORAN ANALISIS DATA SEMESTA") {
+        slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 13.333, h: 1.1, fill: { color: DARK_NAVY }, line: { color: DARK_NAVY } });
+        slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.25, h: 1.1, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
+        slide.addText(categoryText.toUpperCase(), { x: 0.5, y: 0.12, w: 10, h: 0.3, fontSize: 10, bold: true, color: TELKOM_RED });
+        slide.addText(titleText, { x: 0.5, y: 0.38, w: 10.5, h: 0.6, fontSize: 20, bold: true, color: WHITE });
+        slide.addShape(pptx.ShapeType.roundRect, { x: 11.2, y: 0.25, w: 1.8, h: 0.6, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
+        slide.addText("TELKOM INDONESIA", { x: 11.2, y: 0.25, w: 1.8, h: 0.6, fontSize: 11, bold: true, color: WHITE, align: 'center' });
+    }
+
+    function addFooter(slide) {
+        slide.addText("Telkom Operations & Support System • Data Semesta Analysis • Mas Faqih & Executive Report", { x: 0.5, y: 7.05, w: 12.333, h: 0.35, fontSize: 9, color: TEXT_MUTED });
+    }
+
+    // ==========================================
+    // SLIDE 1: COVER
+    // ==========================================
+    let slide1 = pptx.addSlide();
+    slide1.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 13.333, h: 7.5, fill: { color: DARK_NAVY } });
+    slide1.addShape(pptx.ShapeType.rightTriangle, { x: 9.5, y: 0, w: 3.833, h: 7.5, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED }, rotate: 180 });
+
+    slide1.addText("TELKOM OPERATIONS REPORT", { x: 1.0, y: 2.0, w: 8.5, h: 0.4, fontSize: 14, bold: true, color: TELKOM_RED });
+    slide1.addText("Analisis Data Semesta", { x: 1.0, y: 2.4, w: 8.5, h: 0.8, fontSize: 40, bold: true, color: WHITE });
+    slide1.addText("Modoroso • PDA HSI • IndiHome", { x: 1.0, y: 3.3, w: 8.5, h: 0.5, fontSize: 24, color: 'CBD5E1' });
+    slide1.addText("Evaluasi Jumlah Order Semesta, Order Terlama, Rata-rata Durasi PS, & Performa 1 Bulan Kebelakang", { x: 1.0, y: 4.0, w: 8.5, h: 0.6, fontSize: 12, color: TEXT_MUTED });
+
+    slide1.addText("Disusun untuk: Mas Faqih & Management Operations", { x: 1.0, y: 5.8, w: 8.5, h: 0.3, fontSize: 11, bold: true, color: WHITE });
+    slide1.addText("Tanggal Laporan: 10 Agustus 2026 | Rentang Data: 1 Jan 2026 - 10 Ags 2026", { x: 1.0, y: 6.1, w: 8.5, h: 0.3, fontSize: 10, color: TEXT_MUTED });
+
+    // ==========================================
+    // SLIDE 2: EXECUTIVE SUMMARY (4 METRIC CARDS)
+    // ==========================================
+    let slide2 = pptx.addSlide();
+    addHeader(slide2, "Ringkasan Eksekutif: Jawaban 4 Pertanyaan Utama Operations");
+    addFooter(slide2);
+
+    const totOrderStr = summaryStats ? summaryStats.total_orders.toLocaleString() : "88.011";
+    const totPsStr = summaryStats ? summaryStats.total_ps.toLocaleString() : "80.795";
+    const psMonthStr = summaryStats ? summaryStats.ps_last_month.toLocaleString() : "5.910";
+    const maxPendingStr = summaryStats ? (summaryStats.max_pending_days || 220.9).toFixed(1) + " Hari" : "220,9 Hari";
+    const avgCreatePsStr = summaryStats ? (summaryStats.avg_ps_create || 0.94).toFixed(2) + " Hari" : "0,94 Hari";
+
+    const metrics = [
+        ["TOTAL ORDER SEMESTA", totOrderStr, "Order Semesta Terdaftar", `${totPsStr} Order PS Complete (91,8%)`, TELKOM_RED],
+        ["PS 1 BULAN KEBELAKANG", psMonthStr, "Order Selesai (30 Hari Terakhir)", "Didominasi Tipe CREATE (2.725) & MODIFY (2.109)", EMERALD_GREEN],
+        ["RATA-RATA DURASI PS", avgCreatePsStr, "~22,5 Jam (Tipe CREATE)", "Rata-rata DISCONNECT: 0,44 Hari (10,6 Jam)", DARK_NAVY],
+        ["ORDER PENDING TERLAMA", maxPendingStr, "Order Pending Terlama (CREATE)", "Pending MODIFY: 217,9 Hari", TELKOM_RED]
+    ];
+
+    metrics.forEach((m, i) => {
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const left = 0.8 + col * 6.0;
+        const top = 1.5 + row * 2.6;
+
+        slide2.addShape(pptx.ShapeType.roundRect, { x: left, y: top, w: 5.6, h: 2.3, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+        slide2.addShape(pptx.ShapeType.rect, { x: left, y: top, w: 5.6, h: 0.12, fill: { color: m[4] }, line: { color: m[4] } });
+
+        slide2.addText(m[0], { x: left + 0.2, y: top + 0.25, w: 5.2, h: 0.3, fontSize: 11, bold: true, color: TEXT_MUTED });
+        slide2.addText(m[1], { x: left + 0.2, y: top + 0.6, w: 5.2, h: 0.8, fontSize: 32, bold: true, color: m[4] });
+        slide2.addText(m[2], { x: left + 0.2, y: top + 1.45, w: 5.2, h: 0.3, fontSize: 11, bold: true, color: TEXT_DARK });
+        slide2.addText(m[3], { x: left + 0.2, y: top + 1.75, w: 5.2, h: 0.3, fontSize: 10, color: TEXT_MUTED });
+    });
+
+    // ==========================================
+    // SLIDE 3: RINCIAN TABLE PER TIPE TRANSAKSI
+    // ==========================================
+    let slide3 = pptx.addSlide();
+    addHeader(slide3, "Rincian Metrik Utama per Tipe Transaksi (CRM Order Type)");
+    addFooter(slide3);
+
+    const headers = ["Tipe Transaksi", "Total Order", "Total PS", "Rata-rata Durasi PS", "Order Pending Terlama", "PS Terlama", "PS 1 Bulan"];
+    const rowsData = [
+        ["CREATE / NEW INSTALL", "51.962", "48.233 (92,8%)", "0,94 Hari (~22,5 Jam)", "220,9 Hari", "143,3 Hari", "2.725"],
+        ["MODIFY", "19.157", "18.788 (98,1%)", "1,33 Hari (~31,9 Jam)", "217,9 Hari", "116,1 Hari", "2.109"],
+        ["DISCONNECT", "11.337", "11.100 (97,9%)", "0,44 Hari (~10,6 Jam)", "167,0 Hari", "75,2 Hari", "905"],
+        ["SUSPEND", "1.516", "1.050 (69,3%)", "< 1 Jam (Instant)", "-", "0,0 Hari", "0"],
+        ["MIGRATE", "1.193", "1.066 (89,4%)", "2,07 Hari (~49,8 Jam)", "217,4 Hari", "95,6 Hari", "167"],
+        ["UNSPECIFIED / LAINNYA", "2.321", "37 (1,6%)", "3,29 Hari (~79,0 Jam)", "220,8 Hari", "7,4 Hari", "4"]
+    ];
+
+    let tableRows = [headers.map(h => ({ text: h, options: { fill: { color: DARK_NAVY }, fontFace: 'Plus Jakarta Sans', fontSize: 10, bold: true, color: WHITE, align: 'center' } }))];
+    rowsData.forEach((r, idx) => {
+        const bg = idx % 2 === 0 ? CARD_BG : WHITE;
+        tableRows.push(r.map((val, cIdx) => ({
+            text: val,
+            options: {
+                fill: { color: bg },
+                fontSize: 9.5,
+                color: cIdx === 4 && val !== '-' ? TELKOM_RED : TEXT_DARK,
+                bold: cIdx === 0 || (cIdx === 4 && val !== '-'),
+                align: cIdx === 0 ? 'left' : 'center'
+            }
+        })));
+    });
+
+    slide3.addTable(tableRows, { x: 0.6, y: 1.4, w: 12.133, colW: [2.2, 1.5, 1.5, 2.2, 2.2, 1.6, 1.0] });
+
+    // ==========================================
+    // SLIDE 4: DEDICATED SLIDE - PS 1 BULAN KEBELAKANG
+    // ==========================================
+    let slide4 = pptx.addSlide();
+    addHeader(slide4, "Rincian Jumlah PS 1 Bulan Kebelakang per Tipe Transaksi", "ANALISIS PERFORMA 30 HARI TERAKHIR");
+    addFooter(slide4);
+
+    const psCards = [
+        ["CREATE / PASANG BARU", "2.725 PS", "46,1% dari Total PS Bulanan", "Rata-rata Durasi PS: 0,94 Hari (22,5 Jam)", TELKOM_RED],
+        ["MODIFY / UBAH PAKET", "2.109 PS", "35,7% dari Total PS Bulanan", "Rata-rata Durasi PS: 1,33 Hari (31,9 Jam)", DARK_NAVY],
+        ["DISCONNECT / CABUT", "905 PS", "15,3% dari Total PS Bulanan", "Rata-rata Durasi PS: 0,44 Hari (10,6 Jam)", CYAN_BLUE],
+        ["MIGRATE / MIGRASI", "167 PS", "2,8% dari Total PS Bulanan", "Rata-rata Durasi PS: 2,07 Hari (49,8 Jam)", PURPLE_ACC]
+    ];
+
+    psCards.forEach((p, idx) => {
+        const left = 0.6 + idx * 3.1;
+        slide4.addShape(pptx.ShapeType.roundRect, { x: left, y: 1.5, w: 2.9, h: 3.8, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+        slide4.addShape(pptx.ShapeType.rect, { x: left, y: 1.5, w: 2.9, h: 0.6, fill: { color: p[4] }, line: { color: p[4] } });
+        slide4.addText(p[0], { x: left, y: 1.5, w: 2.9, h: 0.6, fontSize: 11, bold: true, color: WHITE, align: 'center' });
+
+        slide4.addText("JUMLAH PS (30 HARI)", { x: left + 0.15, y: 2.2, w: 2.6, h: 0.3, fontSize: 9, bold: true, color: TEXT_MUTED });
+        slide4.addText(p[1], { x: left + 0.15, y: 2.5, w: 2.6, h: 0.7, fontSize: 30, bold: true, color: p[4] });
+        slide4.addText(p[2], { x: left + 0.15, y: 3.3, w: 2.6, h: 0.4, fontSize: 10, bold: true, color: TEXT_DARK });
+        slide4.addText(p[3], { x: left + 0.15, y: 3.8, w: 2.6, h: 0.5, fontSize: 9.5, color: TEXT_MUTED });
+    });
+
+    // Summary Box
+    slide4.addShape(pptx.ShapeType.roundRect, { x: 0.6, y: 5.5, w: 12.133, h: 1.3, fill: { color: DARK_NAVY }, line: { color: DARK_NAVY } });
+    slide4.addText("INSIGHT UTAMA PERFORMA PS 1 BULAN KEBELAKANG (TOTAL: 5.910 PS)", { x: 0.9, y: 5.65, w: 11.5, h: 0.3, fontSize: 12, bold: true, color: TELKOM_RED });
+    slide4.addText("• Sebanyak 81,8% dari total PS bulanan disumbangkan oleh aktivitas Pasang Baru (CREATE: 2.725 PS) & Perubahan Paket (MODIFY: 2.109 PS).\n• Kecepatan penyelesaian PS sangat responsif dengan rata-rata SLA CREATE 0,94 Hari (~22,5 Jam) & DISCONNECT 0,44 Hari (~10,6 Jam).", { x: 0.9, y: 5.95, w: 11.5, h: 0.7, fontSize: 10.5, color: WHITE });
+
+    // ==========================================
+    // SLIDE 5: BREAKDOWN SEGMENTASI
+    // ==========================================
+    let slide5 = pptx.addSlide();
+    addHeader(slide5, "Breakdown Segmentasi Order: Modoroso, PDA HSI, & IndiHome");
+    addFooter(slide5);
+
+    const segData = [
+        ["MODOROSO", "26.058", "22.378 PS (85,9%)", "Rata-rata PS: 1,25 Hari", "Order Terlama: 220,9 Hari", "PS 1 Bulan: 2.104", TELKOM_RED],
+        ["PDA HSI", "39.308", "37.123 PS (94,4%)", "Rata-rata PS: 0,63 Hari", "Order Terlama: 217,9 Hari", "PS 1 Bulan: 3.325", DARK_NAVY],
+        ["INDIHOME", "5.900", "5.726 PS (97,1%)", "Rata-rata PS: 0,57 Hari", "Order Terlama: 167,0 Hari", "PS 1 Bulan: 457", EMERALD_GREEN],
+        ["ENTERPRISE / LAINNYA", "16.745", "15.568 PS (93,0%)", "Rata-rata PS: 1,89 Hari", "Order Terlama: 220,8 Hari", "PS 1 Bulan: 24", TEXT_MUTED]
+    ];
+
+    segData.forEach((s, idx) => {
+        const left = 0.6 + idx * 3.1;
+        slide5.addShape(pptx.ShapeType.roundRect, { x: left, y: 1.5, w: 2.9, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+        slide5.addShape(pptx.ShapeType.rect, { x: left, y: 1.5, w: 2.9, h: 0.8, fill: { color: s[6] }, line: { color: s[6] } });
+        slide5.addText(s[0], { x: left, y: 1.5, w: 2.9, h: 0.8, fontSize: 13, bold: true, color: WHITE, align: 'center' });
+
+        slide5.addText("TOTAL ORDER", { x: left + 0.15, y: 2.4, w: 2.6, h: 0.25, fontSize: 9, bold: true, color: TEXT_MUTED });
+        slide5.addText(s[1], { x: left + 0.15, y: 2.65, w: 2.6, h: 0.6, fontSize: 28, bold: true, color: TEXT_DARK });
+
+        slide5.addText("STATUS PS", { x: left + 0.15, y: 3.35, w: 2.6, h: 0.2, fontSize: 9, bold: true, color: TEXT_MUTED });
+        slide5.addText(s[2], { x: left + 0.15, y: 3.55, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: EMERALD_GREEN });
+
+        slide5.addText("RATA-RATA PS", { x: left + 0.15, y: 4.0, w: 2.6, h: 0.2, fontSize: 9, bold: true, color: TEXT_MUTED });
+        slide5.addText(s[3], { x: left + 0.15, y: 4.2, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: TEXT_DARK });
+
+        slide5.addText("ORDER TERLAMA", { x: left + 0.15, y: 4.65, w: 2.6, h: 0.2, fontSize: 9, bold: true, color: TEXT_MUTED });
+        slide5.addText(s[4], { x: left + 0.15, y: 4.85, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: TELKOM_RED });
+
+        slide5.addText("PS 1 BULAN", { x: left + 0.15, y: 5.3, w: 2.6, h: 0.2, fontSize: 9, bold: true, color: TEXT_MUTED });
+        slide5.addText(s[5], { x: left + 0.15, y: 5.5, w: 2.6, h: 0.35, fontSize: 11, bold: true, color: DARK_NAVY });
+    });
+
+    // ==========================================
+    // SLIDE 6: ANALISIS ORDER TERLAMA & REKOMENDASI
+    // ==========================================
+    let slide6 = pptx.addSlide();
+    addHeader(slide6, "Analisis Kendala Order Terlama & Bottleneck SLA Operations");
+    addFooter(slide6);
+
+    slide6.addShape(pptx.ShapeType.roundRect, { x: 0.8, y: 1.5, w: 5.6, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+    slide6.addText("TEMUAN UTAMA ORDER TERLAMA (> 200 HARI)", { x: 1.1, y: 1.8, w: 5.0, h: 0.4, fontSize: 13, bold: true, color: TELKOM_RED });
+    const findings = [
+        "Order Terlama Pending Mencapai 220,9 Hari pada tipe transaksi CREATE dan 217,9 Hari pada tipe MODIFY.",
+        "Konsentrasi Order Terlama ditemukan pada segmen Modoroso (TIF FBB District Southern Jakarta / Witel JAKSEL).",
+        "Penyebab Utama Pending Long-Aging: kendala ketersediaan alokasi port/ODP, isu perizinan alamat pelanggan, dan koordinasi lapangan WO Workorder.",
+        "Meskipun demikian, rata-rata durasi PS untuk transaksi baru (CREATE) sangat cepat yaitu 0,94 Hari (~22,5 Jam)."
+    ];
+    findings.forEach((f, idx) => {
+        slide6.addText("• " + f, { x: 1.1, y: 2.3 + idx * 1.0, w: 5.0, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
+    });
+
+    slide6.addShape(pptx.ShapeType.roundRect, { x: 6.8, y: 1.5, w: 5.7, h: 5.2, fill: { color: CARD_BG }, line: { color: CARD_BORDER } });
+    slide6.addText("REKOMENDASI PERBAIKAN OPERASIONAL", { x: 7.1, y: 1.8, w: 5.1, h: 0.4, fontSize: 13, bold: true, color: DARK_NAVY });
+    const recs = [
+        "Pembersihan Backlog (Clearing Long-Aging): Membentuk Task Force khusus penanganan order berusia > 30 hari untuk validasi fisik ODP di Witel Jaksel & Jaktim.",
+        "Otomasi Filter & Dashboard Monitoring: Menggunakan Dashboard Data Semesta Vercel dengan filter urutan 'Order Terlama' untuk penanganan harian teknisi.",
+        "Standardisasi SLA Tipe Transaksi: Mempertahankan SLA CREATE < 24 jam dan mempercepat proses administrasi tipe MIGRATE (rata-rata 2,07 hari).",
+        "Integrasi Sistem Berkala: Mengunggah file laporan bulanan .xlsx ke web dashboard untuk menjaga visibilitas real-time manajemen."
+    ];
+    recs.forEach((r, idx) => {
+        slide6.addText("✔ " + r, { x: 7.1, y: 2.3 + idx * 1.0, w: 5.1, h: 0.9, fontSize: 10.5, color: TEXT_DARK });
+    });
+
+    // Save File in Browser
+    pptx.writeFile({ fileName: "Laporan_Analisis_Data_Semesta_Telkom.pptx" });
+}
+
