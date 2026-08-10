@@ -1067,7 +1067,7 @@ function exportPPTReport() {
     }
 
     function addFooter(slide) {
-        slide.addText("Telkom Operations & Support System • Data Semesta Analysis • Mas Faqih & Executive Report", { x: 0.5, y: 7.05, w: 12.333, h: 0.35, fontSize: 9, color: TEXT_MUTED });
+        slide.addText("Telkom Operations & Support System • Rentang Acuan Data: 01.01.2026 - 10.08.2026", { x: 0.5, y: 7.05, w: 12.333, h: 0.35, fontSize: 9, color: TEXT_MUTED });
     }
 
     // ==========================================
@@ -1083,7 +1083,7 @@ function exportPPTReport() {
     slide1.addText("Acuan Rentang Data: 01.01.2026 s/d 10.08.2026 (Total 88.011 Order)", { x: 1.0, y: 3.6, w: 8.5, h: 0.4, fontSize: 13, bold: true, color: EMERALD_GREEN });
     slide1.addText("Evaluasi Jumlah Order Semesta, Order Terlama, Rata-rata Durasi PS, & Performa 1 Bulan Kebelakang", { x: 1.0, y: 4.1, w: 8.5, h: 0.6, fontSize: 12, color: TEXT_MUTED });
 
-    slide1.addText("Disusun untuk: Mas Faqih & Management Operations", { x: 1.0, y: 5.8, w: 8.5, h: 0.3, fontSize: 11, bold: true, color: WHITE });
+    slide1.addText("Telkom Operations & Support System", { x: 1.0, y: 5.8, w: 8.5, h: 0.3, fontSize: 11, bold: true, color: WHITE });
     slide1.addText("Tanggal Laporan: 10 Agustus 2026 | Periode Data Terverifikasi: 01.01.2026 - 10.08.2026", { x: 1.0, y: 6.1, w: 8.5, h: 0.3, fontSize: 10, color: TEXT_MUTED });
 
     // ==========================================

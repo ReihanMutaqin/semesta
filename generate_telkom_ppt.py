@@ -73,7 +73,7 @@ def create_telkom_presentation():
         txBox = slide.shapes.add_textbox(Inches(0.5), Inches(7.05), Inches(12.333), Inches(0.35))
         tf = txBox.text_frame
         p = tf.paragraphs[0]
-        p.text = "Telkom Operations & Support System • Rentang Acuan Data: 01.01.2026 - 10.08.2026 • Mas Faqih Report"
+        p.text = "Telkom Operations & Support System • Rentang Acuan Data: 01.01.2026 - 10.08.2026"
         p.font.size = Pt(9)
         p.font.color.rgb = TEXT_MUTED
 
@@ -134,7 +134,7 @@ def create_telkom_presentation():
     abox = slide1.shapes.add_textbox(Inches(1.0), Inches(5.8), Inches(8.5), Inches(1.2))
     atf = abox.text_frame
     ap1 = atf.paragraphs[0]
-    ap1.text = "Disusun untuk: Mas Faqih & Management Operations"
+    ap1.text = "Telkom Operations & Support System"
     ap1.font.size = Pt(11)
     ap1.font.bold = True
     ap1.font.color.rgb = WHITE
@@ -496,8 +496,9 @@ def create_telkom_presentation():
         p_rec.font.color.rgb = TEXT_DARK
         p_rec.space_before = Pt(10)
 
-    # Save presentation to both paths
+    # Save presentation to multiple paths
     paths = [
+        r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom_v4.pptx",
         r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom_v3.pptx",
         r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom_v2.pptx",
         r"C:\PROJEK\Data Semesta\Laporan_Analisis_Data_Semesta_Telkom.pptx"
