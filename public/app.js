@@ -1095,11 +1095,12 @@ function exportPPTReport() {
     addHeader(slide2, "Ringkasan Eksekutif: Jawaban 4 Pertanyaan Utama Operations");
     addFooter(slide2);
 
-    const totOrderStr = summaryStats ? summaryStats.total_orders.toLocaleString() : "88.011";
-    const totPsStr = summaryStats ? summaryStats.total_ps.toLocaleString() : "80.795";
-    const psMonthStr = summaryStats ? summaryStats.ps_last_month.toLocaleString() : "5.910";
-    const maxPendingStr = summaryStats ? (summaryStats.max_pending_days || 220.9).toFixed(1) + " Hari" : "220,9 Hari";
-    const avgCreatePsStr = summaryStats ? (summaryStats.avg_ps_create || 0.94).toFixed(2) + " Hari" : "0,94 Hari";
+    const totOrderStr = summaryData ? (summaryData.total_order_semesta || 88011).toLocaleString() : "88.011";
+    const totPsStr = summaryData ? (summaryData.total_ps || 80795).toLocaleString() : "80.795";
+    const psMonthStr = summaryData ? (summaryData.total_ps_last_month || 5910).toLocaleString() : "5.910";
+    const typeCreate = (summaryData && summaryData.type_summary) ? summaryData.type_summary.find(t => t.tipe_transaksi === 'CREATE') : null;
+    const maxPendingStr = (typeCreate && typeCreate.max_active_days) ? `${typeCreate.max_active_days.toFixed(1)} Hari` : "220,9 Hari";
+    const avgCreatePsStr = (typeCreate && typeCreate.avg_ps_days) ? `${typeCreate.avg_ps_days.toFixed(2)} Hari` : "0,94 Hari";
 
     const metrics = [
         ["TOTAL ORDER SEMESTA (01.01.2026 - 10.08.2026)", totOrderStr, "Order Semesta Terdaftar", `${totPsStr} Order PS Complete (91,8%)`, TELKOM_RED],
