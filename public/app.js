@@ -469,8 +469,8 @@ function processRawExcelRows(rows) {
 
         // PS = sudah selesai/dieksekusi
         const psStatuses = ['COMPLETE', 'COMPWORK', 'INSTCOMP', 'DEINSTCOMP', 'ACTCOMP', 'VALCOMP'];
-        // Cleared = dibatalkan/ditolak/ditutup → BUKAN pending, BUKAN PS
-        const clearedStatuses = ['CANCLWORK', 'CANCEL', 'CANCELWORK', 'REJECT', 'REJECTED', 'CLOSE', 'CLOSED', 'ABORT', 'ABORTED'];
+        // Cleared = dibatalkan/ditolak/gagal/ditutup → BUKAN pending, BUKAN PS
+        const clearedStatuses = ['CANCLWORK', 'CANCEL', 'CANCELWORK', 'REJECT', 'REJECTED', 'CLOSE', 'CLOSED', 'ABORT', 'ABORTED', 'WORKFAIL', 'WAPFR', 'FAILWORK', 'FAILED'];
 
         const isPs = psStatuses.includes(statusRaw) ? 1 : 0;
         const isCleared = clearedStatuses.includes(statusRaw) ? 1 : 0;
@@ -1489,13 +1489,14 @@ function exportPPTReport() {
     addHeader(slide6, "Detail Top Order Pending Terlama per Tipe Transaksi (Belum PS)", "RINCIAN ORDER BACKLOG PRIORITAS PER TIPE TRANSAKSI");
     addFooter(slide6);
 
-    // Get Top 3 longest pending orders for EACH CRM transaction type
+    // Get Top 3 longest ACTIVE pending orders per CRM type (WORKFAIL, WAPFR sudah excluded via clearedStatuses)
     let pendingOrders = [];
     if (allOrdersStore && allOrdersStore.length > 0) {
         const typesList = ['CREATE', 'MODIFY', 'DISCONNECT', 'SUSPEND', 'MIGRATE'];
         typesList.forEach(t => {
             const topForType = allOrdersStore
-                .filter(o => o.is_ps === 0 && o.crm_order_type === t && o.active_duration_days !== null && o.active_duration_days > 0)
+                .filter(o => o.is_ps === 0 && o.crm_order_type === t
+                    && o.active_duration_days !== null && o.active_duration_days > 0)
                 .sort((a, b) => b.active_duration_days - a.active_duration_days)
                 .slice(0, 3);
             pendingOrders = pendingOrders.concat(topForType);
@@ -1503,10 +1504,13 @@ function exportPPTReport() {
         pendingOrders.sort((a, b) => b.active_duration_days - a.active_duration_days);
     }
 
-    const pendingHeader6 = ["No", "SC Order No / Track ID", "Pelanggan", "Tipe", "Status", "Segmen", "Witel", "Tgl Dibuat", "Durasi Pending"];
+    // Helper: truncate + ellipsis
+    function scTrunc6(sc) { const s=(sc||'-').trim(); return s.length>22?s.substring(0,21)+'…':s; }
+
+    const pendingHeader6 = ["No", "SC Order No", "Pelanggan", "Tipe", "Status", "Segmen", "Witel", "Tgl", "Durasi"];
     let pendingTableRows = [pendingHeader6.map(h => ({
         text: h,
-        options: { fill: { color: DARK_NAVY }, fontSize: 8.5, bold: true, color: WHITE, align: 'center' }
+        options: { fill: { color: DARK_NAVY }, fontSize: 8, bold: true, color: WHITE, align: 'center', valign: 'middle' }
     }))];
 
     if (pendingOrders.length > 0) {
@@ -1514,57 +1518,51 @@ function exportPPTReport() {
             const bg = idx % 2 === 0 ? CARD_BG : WHITE;
             const isVeryOld = o.active_duration_days > 180;
             const isOld = o.active_duration_days > 90;
-            const durationColor = isVeryOld ? TELKOM_RED : (isOld ? 'D97706' : TEXT_DARK);
-            const daysStr = `${o.active_duration_days.toFixed(1)} Hari`;
+            const durationColor = isVeryOld ? TELKOM_RED : (isOld ? 'D97706' : '065F46');
+            const daysStr = `${o.active_duration_days.toFixed(0)} Hr`;
             const createdShort = o.date_created ? o.date_created.substring(0, 10) : '-';
-            const scFull = o.sc_order_no || '-';               // FULL, tidak dipotong
-            const custTrunc = (o.customer_name || 'N/A').substring(0, 16);
-            const witelTrunc = (o.witel || '-').substring(0, 10);
-            const statusStr = o.status || '-';
+            const scStr = scTrunc6(o.sc_order_no);
+            const custTrunc = (o.customer_name || 'N/A').substring(0, 14);
+            const witelTrunc = (o.witel || '-').substring(0, 8);
+            const statusStr = (o.status || '-').substring(0, 10);
 
             pendingTableRows.push([
-                { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
-                { text: scFull, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK, bold: true } },
-                { text: custTrunc, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK } },
-                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8, color: TELKOM_RED, bold: true, align: 'center' } },
-                { text: statusStr, options: { fill: { color: bg }, fontSize: 7.5, color: CYAN_BLUE, bold: true, align: 'center' } },
-                { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
-                { text: witelTrunc, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
-                { text: createdShort, options: { fill: { color: bg }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
-                { text: daysStr, options: { fill: { color: bg }, fontSize: 8.5, color: durationColor, bold: isVeryOld || isOld, align: 'center' } }
+                { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                { text: scStr, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, bold: true, valign: 'middle' } },
+                { text: custTrunc, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, valign: 'middle' } },
+                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 7.5, color: TELKOM_RED, bold: true, align: 'center', valign: 'middle' } },
+                { text: statusStr, options: { fill: { color: bg }, fontSize: 7, color: CYAN_BLUE, bold: true, align: 'center', valign: 'middle' } },
+                { text: (o.segment || '-').replace(' / Lainnya', '').replace('PDA HSI', 'PDA HSI'), options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, align: 'center', valign: 'middle' } },
+                { text: witelTrunc, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, align: 'center', valign: 'middle' } },
+                { text: createdShort, options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                { text: daysStr, options: { fill: { color: bg }, fontSize: 8.5, color: durationColor, bold: true, align: 'center', valign: 'middle' } }
             ]);
         });
     } else {
-        // Fallback static data per type if no upload
         [
-            ["1", "MYIR2026010000123", "PT. PRIMA NUSA", "CREATE", "OPEN", "Modoroso", "JAKSEL", "2026-01-02", "220.9 Hari"],
-            ["2", "SC10-2026010000456", "CV. MAJU JAYA", "MODIFY", "INPROG", "PDA HSI", "JAKTIM", "2026-01-05", "217.9 Hari"],
-            ["3", "DGPS-2026010000789", "KEMENDAG", "DISCONNECT", "OPEN", "PDA HSI", "JAKPUS", "2026-01-10", "167.0 Hari"],
-            ["4", "1-42859059875_1-18NHMV", "AXA LIFE INDONESIA", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221.1 Hari"],
-            ["5", "MIG-2026010009988", "TELKOMSEL SLA", "MIGRATE", "INPROG", "PDA HSI", "JAKBAR", "2026-01-08", "217.4 Hari"]
-        ].forEach(([no, sc, cust, tipe, stat, seg, witel, tgl, dur]) => {
+            ["1", "MYIR20260100001…", "PT. PRIMA NUSA", "CREATE", "OPEN", "Modoroso", "JAKSEL", "2026-01-02", "221 Hr"],
+            ["2", "SC10-20260100004…", "CV. MAJU JAYA", "MODIFY", "INPROG", "PDA HSI", "JAKTIM", "2026-01-05", "218 Hr"],
+            ["3", "DGPS-20260100007…", "KEMENDAG", "DISCONNECT", "OPEN", "PDA HSI", "JAKPUS", "2026-01-10", "167 Hr"],
+            ["4", "1-42859059875_1-…", "AXA LIFE INDO", "SUSPEND", "OPEN", "Enterprise", "JAKSEL", "2026-01-01", "221 Hr"],
+            ["5", "MIG-20260100099…", "TELKOMSEL SLA", "MIGRATE", "INPROG", "PDA HSI", "JAKBAR", "2026-01-08", "217 Hr"]
+        ].forEach(([no, sc, cust, tipe, stat, seg, witel, tgl, dur], i) => {
+            const bg = i % 2 === 0 ? CARD_BG : WHITE;
             pendingTableRows.push([
-                { text: no, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
-                { text: sc, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK, bold: true } },
-                { text: cust, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK } },
-                { text: tipe, options: { fill: { color: CARD_BG }, fontSize: 8, color: TELKOM_RED, bold: true, align: 'center' } },
-                { text: stat, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: CYAN_BLUE, bold: true, align: 'center' } },
-                { text: seg, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
-                { text: witel, options: { fill: { color: CARD_BG }, fontSize: 7.5, color: TEXT_DARK, align: 'center' } },
-                { text: tgl, options: { fill: { color: CARD_BG }, fontSize: 8, color: TEXT_MUTED, align: 'center' } },
-                { text: dur, options: { fill: { color: CARD_BG }, fontSize: 8.5, color: TELKOM_RED, bold: true, align: 'center' } }
+                { text: no, options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                { text: sc, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, bold: true, valign: 'middle' } },
+                { text: cust, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, valign: 'middle' } },
+                { text: tipe, options: { fill: { color: bg }, fontSize: 7.5, color: TELKOM_RED, bold: true, align: 'center', valign: 'middle' } },
+                { text: stat, options: { fill: { color: bg }, fontSize: 7, color: CYAN_BLUE, bold: true, align: 'center', valign: 'middle' } },
+                { text: seg, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, align: 'center', valign: 'middle' } },
+                { text: witel, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, align: 'center', valign: 'middle' } },
+                { text: tgl, options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                { text: dur, options: { fill: { color: bg }, fontSize: 8.5, color: TELKOM_RED, bold: true, align: 'center', valign: 'middle' } }
             ]);
         });
     }
 
-    // colW total = 12.733 (9 kolom): No, SC Order, Pelanggan, Tipe, Status, Segmen, Witel, Tgl, Durasi
-    slide6.addTable(pendingTableRows, { x: 0.3, y: 1.35, w: 12.733, colW: [0.35, 2.85, 1.5, 0.9, 1.15, 1.2, 1.1, 1.35, 1.8] });
-
-    // Legend
-    slide6.addShape(pptx.shapes.RECTANGLE, { x: 0.4, y: 6.5, w: 0.2, h: 0.2, fill: { color: TELKOM_RED }, line: { color: TELKOM_RED } });
-    slide6.addText("> 180 Hari (Kritis)", { x: 0.65, y: 6.48, w: 2.5, h: 0.25, fontSize: 9, color: TELKOM_RED, bold: true });
-    slide6.addShape(pptx.shapes.RECTANGLE, { x: 3.5, y: 6.5, w: 0.2, h: 0.2, fill: { color: 'D97706' }, line: { color: 'D97706' } });
-    slide6.addText("> 90 Hari (Perlu Perhatian)", { x: 3.75, y: 6.48, w: 3.0, h: 0.25, fontSize: 9, color: 'D97706', bold: true });
+    // rowH=0.38 → 15 rows max muat di slide. colW total=12.733
+    slide6.addTable(pendingTableRows, { x: 0.3, y: 1.35, w: 12.733, rowH: 0.38, colW: [0.3, 2.3, 1.4, 0.85, 1.1, 1.15, 0.85, 1.1, 1.65] });
 
     // ==========================================
     // SLIDE 7: TOP ORDER PS TERLAMA PER TIPE TRANSAKSI (DETAIL)
@@ -1596,29 +1594,29 @@ function exportPPTReport() {
     if (psOrders.length > 0) {
         psOrders.forEach((o, idx) => {
             const bg = idx % 2 === 0 ? CARD_BG : WHITE;
-            const daysStr = `${o.ps_duration_days.toFixed(1)} Hari`;
+            const daysStr = `${o.ps_duration_days.toFixed(0)} Hr`;
             const createdShort = o.date_created ? o.date_created.substring(0, 10) : '-';
             const statusShort = o.status_date ? o.status_date.substring(0, 10) : '-';
-            const scFull = o.sc_order_no || '-';
-            const custTrunc = (o.customer_name || 'N/A').substring(0, 16);
-            const witelTrunc = (o.witel || '-').substring(0, 10);
+            const scStr7 = (s => s.length>22?s.substring(0,21)+'…':s)((o.sc_order_no||'-').trim());
+            const custTrunc = (o.customer_name || 'N/A').substring(0, 14);
+            const witelTrunc = (o.witel || '-').substring(0, 8);
 
             psTableRows.push([
-                { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
-                { text: scFull, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, bold: true } },
-                { text: custTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK } },
-                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 8.5, color: DARK_NAVY, bold: true, align: 'center' } },
-                { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
-                { text: witelTrunc, options: { fill: { color: bg }, fontSize: 8, color: TEXT_DARK, align: 'center' } },
-                { text: createdShort, options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
-                { text: statusShort, options: { fill: { color: bg }, fontSize: 8.5, color: TEXT_MUTED, align: 'center' } },
-                { text: daysStr, options: { fill: { color: bg }, fontSize: 9, color: TELKOM_RED, bold: true, align: 'center' } }
+                { text: String(idx + 1), options: { fill: { color: bg }, fontSize: 7.5, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                { text: scStr7, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, bold: true, valign: 'middle' } },
+                { text: custTrunc, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, valign: 'middle' } },
+                { text: o.crm_order_type || '-', options: { fill: { color: bg }, fontSize: 7.5, color: DARK_NAVY, bold: true, align: 'center', valign: 'middle' } },
+                { text: (o.segment || '-').replace(' / Lainnya', ''), options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, align: 'center', valign: 'middle' } },
+                { text: witelTrunc, options: { fill: { color: bg }, fontSize: 7, color: TEXT_DARK, align: 'center', valign: 'middle' } },
+                { text: createdShort, options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                { text: statusShort, options: { fill: { color: bg }, fontSize: 7, color: TEXT_MUTED, align: 'center', valign: 'middle' } },
+                { text: daysStr, options: { fill: { color: bg }, fontSize: 8.5, color: TELKOM_RED, bold: true, align: 'center', valign: 'middle' } }
             ]);
         });
     }
 
     if (psTableRows.length > 1) {
-        slide7.addTable(psTableRows, { x: 0.3, y: 1.35, w: 12.733, colW: [0.35, 2.85, 1.6, 0.9, 1.3, 1.1, 1.35, 1.35, 1.8] });
+        slide7.addTable(psTableRows, { x: 0.3, y: 1.35, w: 12.733, rowH: 0.38, colW: [0.3, 2.3, 1.4, 0.85, 1.2, 0.9, 1.1, 1.1, 1.58] });
     }
 
     // ==========================================
