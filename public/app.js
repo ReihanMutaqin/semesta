@@ -265,6 +265,10 @@ function processRawExcelRows(rows) {
             maxDateMs = statusDate.getTime();
             maxDateStr = formatDateStr(statusDate);
         }
+        if (dateModified && dateModified.getTime() > maxDateMs) {
+            maxDateMs = dateModified.getTime();
+            maxDateStr = formatDateStr(dateModified);
+        }
         if (dateCreated && dateCreated.getTime() < minDateMs) {
             minDateMs = dateCreated.getTime();
             minDateStr = formatDateStr(dateCreated);
