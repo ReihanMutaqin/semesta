@@ -1,4 +1,4 @@
-// Data Semesta Dashboard Frontend Logic (Interactive Detail Modal & Drill-down)
+// Data Semesta Dashboard Frontend Logic (Supports Empty Initial State & Live Upload)
 
 let summaryData = null;
 let currentOrders = [];
@@ -30,7 +30,6 @@ function setupEventListeners() {
         loadOrdersData();
     });
 
-    // Upload XLSX Trigger & Change Handlers
     const triggerUploadBtn = document.getElementById('btn-trigger-upload');
     const fileInput = document.getElementById('file-input-xlsx');
 
@@ -45,11 +44,9 @@ function setupEventListeners() {
         }
     });
 
-    // Detail Modal Close Buttons
     document.getElementById('btn-close-detail-modal').addEventListener('click', closeDetailModal);
     document.getElementById('btn-modal-close-footer').addEventListener('click', closeDetailModal);
 
-    // Close modal on Escape key or backdrop click
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeDetailModal();
     });
@@ -58,7 +55,6 @@ function setupEventListeners() {
         if (e.target.id === 'detail-modal') closeDetailModal();
     });
 
-    // Search Input with Debounce
     const searchInput = document.getElementById('filter-search');
     searchInput.addEventListener('input', () => {
         clearTimeout(searchDebounce);
@@ -68,7 +64,6 @@ function setupEventListeners() {
         }, 300);
     });
 
-    // Filter Change
     document.getElementById('filter-segment').addEventListener('change', () => {
         currentPage = 1;
         loadOrdersData();
@@ -84,7 +79,6 @@ function setupEventListeners() {
         loadOrdersData();
     });
 
-    // Pagination Buttons
     document.getElementById('btn-first').addEventListener('click', () => {
         if (currentPage > 1) {
             currentPage = 1;
@@ -115,15 +109,12 @@ function setupEventListeners() {
 }
 
 function closeDetailModal() {
-    const modal = document.getElementById('detail-modal');
-    modal.classList.add('hidden');
+    document.getElementById('detail-modal').classList.add('hidden');
 }
 
-// Open Order Detail Popup Modal with 31 detailed attributes
 function openOrderDetailModal(ord) {
     document.getElementById('modal-sc-order').textContent = ord.sc_order_no || 'N/A';
     
-    // Badges
     const statusBadge = document.getElementById('modal-status-badge');
     statusBadge.textContent = ord.status || 'UNKNOWN';
     statusBadge.className = `px-2.5 py-0.5 rounded text-xs font-bold ${getStatusBadgeStyle(ord.status, ord.is_ps)}`;
@@ -135,7 +126,6 @@ function openOrderDetailModal(ord) {
     document.getElementById('modal-customer-witel').textContent = 
         `Pelanggan: ${ord.customer_name || 'N/A'} • Witel: ${ord.witel || '-'} • Workzone: ${ord.workzone || '-'}`;
 
-    // Section 1
     document.getElementById('md-sc-order-no').textContent = ord.sc_order_no || '-';
     document.getElementById('md-workorder').textContent = ord.workorder || '-';
     document.getElementById('md-oss-order-id').textContent = ord.oss_order_id || '-';
@@ -144,7 +134,6 @@ function openOrderDetailModal(ord) {
     document.getElementById('md-service-no').textContent = ord.service_no || '-';
     document.getElementById('md-address').textContent = ord.address || '-';
 
-    // Section 2
     document.getElementById('md-product-name').textContent = ord.product_name || 'N/A';
     document.getElementById('md-product-type').textContent = ord.product_type || '-';
     document.getElementById('md-crm-order-type').textContent = ord.crm_order_type || '-';
@@ -152,7 +141,6 @@ function openOrderDetailModal(ord) {
     document.getElementById('md-owner-group').textContent = ord.owner_group || '-';
     document.getElementById('md-witel-workzone').textContent = `${ord.witel || '-'} / ${ord.workzone || '-'}`;
 
-    // Section 3
     document.getElementById('md-status').textContent = ord.status || '-';
     document.getElementById('md-date-created').textContent = ord.date_created || '-';
     document.getElementById('md-status-date').textContent = ord.status_date || '-';
@@ -168,7 +156,6 @@ function openOrderDetailModal(ord) {
     document.getElementById('md-sched-booking').textContent = `${ord.sched_start || '-'} / ${ord.booking_date || '-'}`;
     document.getElementById('md-date-modified').textContent = ord.date_modified || '-';
 
-    // Section 4
     document.getElementById('md-no-kontrak').textContent = ord.no_kontrak || '-';
     document.getElementById('md-tif-area').textContent = `${ord.area_tif || '-'} / ${ord.district_tif || '-'}`;
     
@@ -179,7 +166,6 @@ function openOrderDetailModal(ord) {
     document.getElementById('md-measurement').textContent = measStr;
     document.getElementById('md-description').textContent = ord.description || '-';
 
-    // Show modal
     document.getElementById('detail-modal').classList.remove('hidden');
 
     if (window.lucide) {
@@ -187,7 +173,6 @@ function openOrderDetailModal(ord) {
     }
 }
 
-// Upload File Handler
 async function handleFileUpload(file) {
     const modal = document.getElementById('upload-modal');
     const titleEl = document.getElementById('upload-modal-title');
@@ -242,7 +227,6 @@ async function handleFileUpload(file) {
     }
 }
 
-// Load Summary JSON
 async function loadSummaryData() {
     try {
         const res = await fetch('/api/summary');
@@ -255,23 +239,34 @@ async function loadSummaryData() {
 }
 
 function renderSummaryUI(data) {
-    document.getElementById('header-max-date').textContent = data.max_date || 'N/A';
-    document.getElementById('header-total-records').textContent = `${data.total_order_semesta.toLocaleString()} Order`;
+    document.getElementById('header-max-date').textContent = data.max_date || 'Belum Ada Data';
+    document.getElementById('header-total-records').textContent = `${(data.total_order_semesta || 0).toLocaleString()} Order`;
 
-    document.getElementById('kpi-total-orders').textContent = data.total_order_semesta.toLocaleString();
-    document.getElementById('kpi-total-ps').textContent = data.total_ps.toLocaleString();
-    document.getElementById('kpi-ps-percent').textContent = `${data.ps_percentage.toFixed(1)}%`;
-    document.getElementById('kpi-ps-bar').style.width = `${data.ps_percentage}%`;
-    document.getElementById('kpi-ps-last-month').textContent = data.total_ps_last_month.toLocaleString();
+    document.getElementById('kpi-total-orders').textContent = (data.total_order_semesta || 0).toLocaleString();
+    document.getElementById('kpi-total-ps').textContent = (data.total_ps || 0).toLocaleString();
+    document.getElementById('kpi-ps-percent').textContent = `${(data.ps_percentage || 0).toFixed(1)}%`;
+    document.getElementById('kpi-ps-bar').style.width = `${data.ps_percentage || 0}%`;
+    document.getElementById('kpi-ps-last-month').textContent = (data.total_ps_last_month || 0).toLocaleString();
 
-    renderTypeSummaryTable(data.type_summary);
-    renderSegmentCards(data.segment_summary);
+    renderTypeSummaryTable(data.type_summary || []);
+    renderSegmentCards(data.segment_summary || []);
     renderCharts(data);
 }
 
 function renderTypeSummaryTable(types) {
     const tbody = document.getElementById('type-summary-tbody');
     tbody.innerHTML = '';
+
+    if (types.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="py-6 text-center text-slate-500 font-normal">
+                    Belum ada data laporan. Silakan klik tombol <strong>"Upload XLSX Baru"</strong> di atas.
+                </td>
+            </tr>
+        `;
+        return;
+    }
 
     types.forEach(t => {
         const tr = document.createElement('tr');
@@ -291,15 +286,14 @@ function renderTypeSummaryTable(types) {
                 ${t.tipe_transaksi}
                 <i data-lucide="arrow-down-right" class="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity"></i>
             </td>
-            <td class="py-3.5 px-4 text-right font-semibold text-slate-200">${t.total_order.toLocaleString()}</td>
-            <td class="py-3.5 px-4 text-right font-semibold text-emerald-400">${t.total_ps.toLocaleString()}</td>
+            <td class="py-3.5 px-4 text-right font-semibold text-slate-200">${(t.total_order || 0).toLocaleString()}</td>
+            <td class="py-3.5 px-4 text-right font-semibold text-emerald-400">${(t.total_ps || 0).toLocaleString()}</td>
             <td class="py-3.5 px-4 text-right font-medium text-emerald-300">${avgPsText}</td>
             <td class="py-3.5 px-4 text-right font-medium text-rose-400">${activeMaxText}</td>
             <td class="py-3.5 px-4 text-right font-medium text-amber-300">${psMaxText}</td>
-            <td class="py-3.5 px-4 text-right font-bold text-cyan-400">${t.ps_last_month.toLocaleString()}</td>
+            <td class="py-3.5 px-4 text-right font-bold text-cyan-400">${(t.ps_last_month || 0).toLocaleString()}</td>
         `;
 
-        // Drill-down click handler
         tr.addEventListener('click', () => {
             const select = document.getElementById('filter-crm-type');
             select.value = t.tipe_transaksi;
@@ -335,6 +329,7 @@ function renderSegmentCards(segments) {
         const card = document.createElement('div');
         card.className = 'p-5 rounded-2xl bg-darkcard backdrop-blur-xl border border-darkborder shadow-xl space-y-3 cursor-pointer hover:border-brand-500/50 hover:bg-slate-900/60 transition-all group';
 
+        const psPct = s.total_order > 0 ? ((s.total_ps / s.total_order) * 100).toFixed(1) : '0.0';
         const avgPsText = s.avg_ps_days ? `${s.avg_ps_days.toFixed(2)} hari` : 'Instant / Fast';
         const pendingMaxText = s.max_active_days ? `${s.max_active_days.toFixed(1)} hari` : '-';
 
@@ -343,10 +338,10 @@ function renderSegmentCards(segments) {
                 <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${getSegmentBadgeStyle(s.segment)}">
                     ${s.segment}
                 </span>
-                <span class="text-xs text-slate-400">${((s.total_ps / s.total_order) * 100).toFixed(1)}% PS</span>
+                <span class="text-xs text-slate-400">${psPct}% PS</span>
             </div>
             <div>
-                <div class="text-2xl font-extrabold text-white group-hover:text-brand-300 transition-colors">${s.total_order.toLocaleString()}</div>
+                <div class="text-2xl font-extrabold text-white group-hover:text-brand-300 transition-colors">${(s.total_order || 0).toLocaleString()}</div>
                 <p class="text-xs text-slate-400 flex items-center justify-between">
                     <span>Total Order</span>
                     <span class="text-[10px] text-brand-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Filter Segmen &rarr;</span>
@@ -355,7 +350,7 @@ function renderSegmentCards(segments) {
             <div class="space-y-1.5 border-t border-slate-800 pt-3 text-xs">
                 <div class="flex justify-between">
                     <span class="text-slate-400">Total PS:</span>
-                    <span class="font-bold text-emerald-400">${s.total_ps.toLocaleString()}</span>
+                    <span class="font-bold text-emerald-400">${(s.total_ps || 0).toLocaleString()}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-slate-400">Rata-rata PS:</span>
@@ -367,12 +362,11 @@ function renderSegmentCards(segments) {
                 </div>
                 <div class="flex justify-between">
                     <span class="text-slate-400">PS 1 Bulan:</span>
-                    <span class="font-bold text-cyan-400">${s.ps_last_month.toLocaleString()}</span>
+                    <span class="font-bold text-cyan-400">${(s.ps_last_month || 0).toLocaleString()}</span>
                 </div>
             </div>
         `;
 
-        // Drill-down click handler
         card.addEventListener('click', () => {
             const select = document.getElementById('filter-segment');
             select.value = s.segment;
@@ -396,7 +390,7 @@ function renderCharts(data) {
     const ctx1 = document.getElementById('chart-crm-types').getContext('2d');
     if (chartCrm) chartCrm.destroy();
     
-    const types = data.type_summary;
+    const types = data.type_summary || [];
     chartCrm = new Chart(ctx1, {
         type: 'bar',
         data: {
@@ -457,7 +451,7 @@ function renderCharts(data) {
     const ctx3 = document.getElementById('chart-segment').getContext('2d');
     if (chartSegment) chartSegment.destroy();
 
-    const segs = data.segment_summary;
+    const segs = data.segment_summary || [];
     chartSegment = new Chart(ctx3, {
         type: 'doughnut',
         data: {
@@ -543,17 +537,18 @@ async function loadOrdersData() {
 }
 
 function renderOrdersTable(data) {
-    currentPage = data.page;
-    totalPages = data.total_pages;
+    currentPage = data.page || 1;
+    totalPages = data.total_pages || 1;
 
     document.getElementById('current-page-num').textContent = currentPage;
     document.getElementById('total-pages-num').textContent = totalPages;
 
-    const startItem = (currentPage - 1) * currentLimit + 1;
-    const endItem = Math.min(currentPage * currentLimit, data.total_records);
+    const totalRecords = data.total_records || 0;
+    const startItem = totalRecords > 0 ? (currentPage - 1) * currentLimit + 1 : 0;
+    const endItem = Math.min(currentPage * currentLimit, totalRecords);
     document.getElementById('showing-records-badge').textContent = 
-        data.total_records > 0 
-            ? `Menampilkan ${startItem.toLocaleString()} - ${endItem.toLocaleString()} dari ${data.total_records.toLocaleString()} Order`
+        totalRecords > 0 
+            ? `Menampilkan ${startItem.toLocaleString()} - ${endItem.toLocaleString()} dari ${totalRecords.toLocaleString()} Order`
             : '0 Order Ditemukan';
 
     document.getElementById('btn-first').disabled = currentPage <= 1;
@@ -564,18 +559,27 @@ function renderOrdersTable(data) {
     const tbody = document.getElementById('orders-tbody');
     tbody.innerHTML = '';
 
-    if (data.orders.length === 0) {
+    if (!data.orders || data.orders.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="py-8 text-center text-slate-500">
-                    Tidak ada order yang cocok dengan filter pencarian.
+                <td colspan="8" class="py-12 text-center text-slate-400">
+                    <div class="w-12 h-12 mx-auto mb-2 rounded-2xl bg-slate-800/80 border border-slate-700 text-brand-400 flex items-center justify-center">
+                        <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                    </div>
+                    <div class="font-bold text-sm text-white">Belum Ada Data Order Semesta</div>
+                    <div class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                        Silakan klik tombol <strong class="text-brand-300">"Upload XLSX Baru"</strong> di atas untuk mengunggah file laporan Excel (.xlsx) Anda.
+                    </div>
                 </td>
             </tr>
         `;
+        if (window.lucide) {
+            lucide.createIcons();
+        }
         return;
     }
 
-    data.orders.forEach((ord, index) => {
+    data.orders.forEach((ord) => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-brand-500/10 cursor-pointer transition-colors group';
         tr.title = 'Klik untuk melihat 31 rincian atribut order ini';
@@ -620,7 +624,6 @@ function renderOrdersTable(data) {
             <td class="py-3 px-4 text-right whitespace-nowrap">${durationText}</td>
         `;
 
-        // Row Click Handler -> Open Order Detail Popup Modal!
         tr.addEventListener('click', () => {
             openOrderDetailModal(ord);
         });

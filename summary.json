@@ -1,55 +1,15 @@
 {
-  "max_date": "2026-08-10 08:44:08",
-  "one_month_ago": "2026-07-11 08:44:08",
-  "total_order_semesta": 88011,
-  "total_ps": 80795,
-  "ps_percentage": 91.80102487189102,
-  "total_ps_last_month": 5910,
+  "max_date": "Belum Ada Data",
+  "one_month_ago": "-",
+  "total_order_semesta": 0,
+  "total_ps": 0,
+  "ps_percentage": 0.0,
+  "total_ps_last_month": 0,
   "type_summary": [
     {
       "tipe_transaksi": "CREATE",
-      "total_order": 51962,
-      "total_ps": 48233,
-      "avg_ps_days": 0.9381977981376617,
-      "avg_ps_hours": 22.516747155303882,
-      "max_active_days": 220.86238425925927,
-      "max_ps_days": 143.34449074074075,
-      "ps_last_month": 2725
-    },
-    {
-      "tipe_transaksi": "DISCONNECT",
-      "total_order": 11337,
-      "total_ps": 11100,
-      "avg_ps_days": 0.4427069771512018,
-      "avg_ps_hours": 10.624967451628843,
-      "max_active_days": 166.98833333333334,
-      "max_ps_days": 75.21392361111111,
-      "ps_last_month": 905
-    },
-    {
-      "tipe_transaksi": "MIGRATE",
-      "total_order": 1193,
-      "total_ps": 1066,
-      "avg_ps_days": 2.073975346351991,
-      "avg_ps_hours": 49.77540831244778,
-      "max_active_days": 217.39208333333335,
-      "max_ps_days": 95.64396990740741,
-      "ps_last_month": 167
-    },
-    {
-      "tipe_transaksi": "MODIFY",
-      "total_order": 19157,
-      "total_ps": 18788,
-      "avg_ps_days": 1.3310871067250252,
-      "avg_ps_hours": 31.946090561400602,
-      "max_active_days": 217.9400347222222,
-      "max_ps_days": 116.07465277777777,
-      "ps_last_month": 2109
-    },
-    {
-      "tipe_transaksi": "MOVE",
-      "total_order": 2,
-      "total_ps": 1,
+      "total_order": 0,
+      "total_ps": 0,
       "avg_ps_days": null,
       "avg_ps_hours": null,
       "max_active_days": null,
@@ -57,9 +17,19 @@
       "ps_last_month": 0
     },
     {
-      "tipe_transaksi": "RESUME",
-      "total_order": 523,
-      "total_ps": 520,
+      "tipe_transaksi": "MODIFY",
+      "total_order": 0,
+      "total_ps": 0,
+      "avg_ps_days": null,
+      "avg_ps_hours": null,
+      "max_active_days": null,
+      "max_ps_days": null,
+      "ps_last_month": 0
+    },
+    {
+      "tipe_transaksi": "DISCONNECT",
+      "total_order": 0,
+      "total_ps": 0,
       "avg_ps_days": null,
       "avg_ps_hours": null,
       "max_active_days": null,
@@ -68,218 +38,62 @@
     },
     {
       "tipe_transaksi": "SUSPEND",
-      "total_order": 1516,
-      "total_ps": 1050,
-      "avg_ps_days": 0.0018055555555555555,
-      "avg_ps_hours": 0.043333333333333335,
+      "total_order": 0,
+      "total_ps": 0,
+      "avg_ps_days": null,
+      "avg_ps_hours": null,
       "max_active_days": null,
-      "max_ps_days": 0.0018055555555555555,
+      "max_ps_days": null,
       "ps_last_month": 0
     },
     {
-      "tipe_transaksi": "UNSPECIFIED",
-      "total_order": 2321,
-      "total_ps": 37,
-      "avg_ps_days": 3.292494212962963,
-      "avg_ps_hours": 79.01986111111111,
-      "max_active_days": 220.83851851851853,
-      "max_ps_days": 7.383923611111111,
-      "ps_last_month": 4
+      "tipe_transaksi": "MIGRATE",
+      "total_order": 0,
+      "total_ps": 0,
+      "avg_ps_days": null,
+      "avg_ps_hours": null,
+      "max_active_days": null,
+      "max_ps_days": null,
+      "ps_last_month": 0
     }
   ],
   "segment_summary": [
     {
-      "segment": "Enterprise / Lainnya",
-      "total_order": 16745,
-      "total_ps": 15568,
-      "avg_ps_days": 0.40299315957167253,
-      "avg_ps_hours": 9.671835829720141,
-      "max_active_days": 21.920625,
-      "ps_last_month": 419
-    },
-    {
-      "segment": "IndiHome",
-      "total_order": 5900,
-      "total_ps": 5726,
+      "segment": "Modoroso",
+      "total_order": 0,
+      "total_ps": 0,
       "avg_ps_days": null,
       "avg_ps_hours": null,
       "max_active_days": null,
-      "ps_last_month": 1
-    },
-    {
-      "segment": "Modoroso",
-      "total_order": 26058,
-      "total_ps": 22378,
-      "avg_ps_days": 1.2537965326440768,
-      "avg_ps_hours": 30.091116783457842,
-      "max_active_days": 220.86238425925927,
-      "ps_last_month": 3381
+      "ps_last_month": 0
     },
     {
       "segment": "PDA HSI",
-      "total_order": 39308,
-      "total_ps": 37123,
-      "avg_ps_days": 0.7858832693451433,
-      "avg_ps_hours": 18.86119846428344,
-      "max_active_days": 220.83851851851853,
-      "ps_last_month": 2109
+      "total_order": 0,
+      "total_ps": 0,
+      "avg_ps_days": null,
+      "avg_ps_hours": null,
+      "max_active_days": null,
+      "ps_last_month": 0
+    },
+    {
+      "segment": "IndiHome",
+      "total_order": 0,
+      "total_ps": 0,
+      "avg_ps_days": null,
+      "avg_ps_hours": null,
+      "max_active_days": null,
+      "ps_last_month": 0
+    },
+    {
+      "segment": "Enterprise / Lainnya",
+      "total_order": 0,
+      "total_ps": 0,
+      "avg_ps_days": null,
+      "avg_ps_hours": null,
+      "max_active_days": null,
+      "ps_last_month": 0
     }
   ],
-  "daily_trend": [
-    {
-      "date_key": "2026-07-11",
-      "total_order": 133,
-      "ps_count": 120
-    },
-    {
-      "date_key": "2026-07-12",
-      "total_order": 102,
-      "ps_count": 93
-    },
-    {
-      "date_key": "2026-07-13",
-      "total_order": 254,
-      "ps_count": 221
-    },
-    {
-      "date_key": "2026-07-14",
-      "total_order": 213,
-      "ps_count": 189
-    },
-    {
-      "date_key": "2026-07-15",
-      "total_order": 180,
-      "ps_count": 163
-    },
-    {
-      "date_key": "2026-07-16",
-      "total_order": 178,
-      "ps_count": 154
-    },
-    {
-      "date_key": "2026-07-17",
-      "total_order": 191,
-      "ps_count": 172
-    },
-    {
-      "date_key": "2026-07-18",
-      "total_order": 163,
-      "ps_count": 148
-    },
-    {
-      "date_key": "2026-07-19",
-      "total_order": 139,
-      "ps_count": 124
-    },
-    {
-      "date_key": "2026-07-20",
-      "total_order": 257,
-      "ps_count": 232
-    },
-    {
-      "date_key": "2026-07-21",
-      "total_order": 236,
-      "ps_count": 211
-    },
-    {
-      "date_key": "2026-07-22",
-      "total_order": 234,
-      "ps_count": 189
-    },
-    {
-      "date_key": "2026-07-23",
-      "total_order": 219,
-      "ps_count": 189
-    },
-    {
-      "date_key": "2026-07-24",
-      "total_order": 269,
-      "ps_count": 235
-    },
-    {
-      "date_key": "2026-07-25",
-      "total_order": 207,
-      "ps_count": 191
-    },
-    {
-      "date_key": "2026-07-26",
-      "total_order": 173,
-      "ps_count": 154
-    },
-    {
-      "date_key": "2026-07-27",
-      "total_order": 246,
-      "ps_count": 215
-    },
-    {
-      "date_key": "2026-07-28",
-      "total_order": 336,
-      "ps_count": 303
-    },
-    {
-      "date_key": "2026-07-29",
-      "total_order": 310,
-      "ps_count": 273
-    },
-    {
-      "date_key": "2026-07-30",
-      "total_order": 254,
-      "ps_count": 224
-    },
-    {
-      "date_key": "2026-07-31",
-      "total_order": 351,
-      "ps_count": 290
-    },
-    {
-      "date_key": "2026-08-01",
-      "total_order": 209,
-      "ps_count": 187
-    },
-    {
-      "date_key": "2026-08-02",
-      "total_order": 170,
-      "ps_count": 155
-    },
-    {
-      "date_key": "2026-08-03",
-      "total_order": 213,
-      "ps_count": 189
-    },
-    {
-      "date_key": "2026-08-04",
-      "total_order": 270,
-      "ps_count": 230
-    },
-    {
-      "date_key": "2026-08-05",
-      "total_order": 201,
-      "ps_count": 169
-    },
-    {
-      "date_key": "2026-08-06",
-      "total_order": 268,
-      "ps_count": 236
-    },
-    {
-      "date_key": "2026-08-07",
-      "total_order": 226,
-      "ps_count": 186
-    },
-    {
-      "date_key": "2026-08-08",
-      "total_order": 148,
-      "ps_count": 104
-    },
-    {
-      "date_key": "2026-08-09",
-      "total_order": 131,
-      "ps_count": 76
-    },
-    {
-      "date_key": "2026-08-10",
-      "total_order": 20,
-      "ps_count": 5
-    }
-  ]
+  "daily_trend": []
 }
